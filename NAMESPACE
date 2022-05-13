@@ -1,0 +1,8 @@
+exportPattern("^[[:alpha:]]+")
+
+export(k.mode)
+export(classify.states)
+export(find.spots)
+export(id.spots)
+export(calc.kn1)
+export(refine.particles)
