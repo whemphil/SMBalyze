@@ -4,4 +4,4 @@ Title: A Package of Tools to Analyze Microscopy Images from Single-Molecule Biop
 Version: 1.0.2
 Author: Wayne O. Hemphill
 Description: Includes functions with automatic and manual functionality to identify particle spots from stacked tiff files, classify the binding states of individual particles over time, and calculate dissociation rates from residence times. 
-Imports: tiff,splus2R,data.table,fitdistrplus,pracma
+Imports: tiff,splus2R,data.table,fitdistrplus,pracma,utils
