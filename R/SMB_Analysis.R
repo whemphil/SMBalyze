@@ -100,7 +100,7 @@ id.spots <- function(path.to.file,file.name,time.step,spot.box=6,spot.radius=6,s
 refine.particles <- function(path.to.file,file.name='Initial-Particle_Data.RData',skip.manual='n',signal.step=1000){
   load(file = paste0(path.to.file,file.name))
   #
-  particle.trace.rolls=apply(particle.traces,MARGIN = c(2),FUN = frollmean,n=5,align='center')
+  particle.trace.rolls=apply(particle.traces,MARGIN = c(2),FUN = data.table::frollmean,n=5,align='center')
   particles.to.keep=rep(FALSE,times=nrow(spots))
   residence.times=c('Particle','Start','Stop','Residence','State Signal')
   dwell.calls=c('Particle','State','Dwell')
