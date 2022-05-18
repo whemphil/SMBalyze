@@ -24,10 +24,10 @@ classify.states <- function(data,signal.step=1000){
   for (i in 1:(length(swaps)-1)){
     pos.averages[swaps[i]:swaps[i+1]]=mean(na.omit(data[swaps[i]:swaps[i+1]]))
   }
-  for (j in 0:10){
+  for (j in 0:25){
     states[(pos.averages>=(signal.step*j-signal.step/2)) & (pos.averages<=(signal.step*j+signal.step/2))]=j
   }
-  for (k in 0:10){
+  for (k in 0:25){
     state.averages[states==k]=mean(na.omit(data[states==k]))
   }
   final=as.data.frame(cbind(states,state.averages))
