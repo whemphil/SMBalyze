@@ -2,7 +2,7 @@
 \alias{find.spots}
 \title{Microscopy Image Spot Finder}
 \description{
-Function to return identify bivariate local maxima and approximate their volume.
+Function to identify bivariate local maxima and approximate their volume.
 }
 \usage{
 find.spots(data,box.size,low.lim,high.lim,fill.radius)
