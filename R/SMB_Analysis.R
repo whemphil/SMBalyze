@@ -1,10 +1,3 @@
-
-library(tiff)
-library(splus2R)
-library(data.table)
-library(fitdistrplus)
-library(pracma)
-
 k.mode <- function(data){
   k=density(data)
   mode=k[['x']][which.max(k[['y']])]
