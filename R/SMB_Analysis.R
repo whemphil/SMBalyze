@@ -90,8 +90,8 @@ id.spots <- function(path.to.file,file.name,time.step,spot.box=6,spot.radius=6,s
   particle.traces=particle.traces-k.mode(particle.traces)
   row.names(particle.traces)=time.step*(1:frame.number)
   #
-  data.table::write.table(spots,file = paste0(path.to.file,'initial_particle_summary.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
-  data.table::write.table(particle.traces,file = paste0(path.to.file,'initial_particle_traces.txt'),quote = FALSE,sep = '\t',row.names = TRUE,col.names = FALSE)
+  write.table(spots,file = paste0(path.to.file,'initial_particle_summary.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
+  write.table(particle.traces,file = paste0(path.to.file,'initial_particle_traces.txt'),quote = FALSE,sep = '\t',row.names = TRUE,col.names = FALSE)
   save(list = c('image.avg','spots','particle.traces','particle.snaps','time.step','frame.number','pixel.size','spot.radius'),file = paste0(path.to.file,'Initial-Particle_Data.RData'))
   id.spots.output.files=list('composite image data'=image.avg,'initial particle summary'=spots,'particle traces'=particle.traces,'particle images data'=particle.snaps)
   return(id.spots.output.files)
@@ -161,19 +161,19 @@ refine.particles <- function(path.to.file,file.name='Initial-Particle_Data.RData
   #
   if (skip.manual=='n'){
     save(list = c('image.avg','residence.data','refined.particle.traces','refined.particle.trace.rolls','refined.spots','refined.particle.snaps','state.calls','residence.calls','dwell.calls'),file = paste0(path.to.file,'Refined-Particle_Data.RData'))
-    data.table::write.table(residence.data,file = paste0(path.to.file,'residence_data.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
-    data.table::write.table(refined.particle.traces,file = paste0(path.to.file,'selected_particle_traces.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
-    data.table::write.table(refined.particle.trace.rolls,file = paste0(path.to.file,'selected_particle_smoothed-traces.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
-    data.table::write.table(refined.spots,file = paste0(path.to.file,'selected_particle_summary.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
+    write.table(residence.data,file = paste0(path.to.file,'residence_data.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
+    write.table(refined.particle.traces,file = paste0(path.to.file,'selected_particle_traces.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
+    write.table(refined.particle.trace.rolls,file = paste0(path.to.file,'selected_particle_smoothed-traces.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
+    write.table(refined.spots,file = paste0(path.to.file,'selected_particle_summary.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
     return(list('image.avg'=image.avg,'residence.data'=residence.data,'refined.particle.traces'=refined.particle.traces,'refined.particle.trace.rolls'=refined.particle.trace.rolls,'refined.spots'=refined.spots,'refined.particle.snaps'=refined.particle.snaps,'state.calls'=state.calls,'residence.calls'=residence.calls,'dwell.calls'=dwell.calls))
     }
   if (skip.manual=='y'){
     save(list = c('image.avg','state.calls','residence.calls','dwell.calls'),file = paste0(path.to.file,'Refined-Particle_Data.RData'))
     return(list('image.avg'=image.avg,'state.calls'=state.calls,'residence.calls'=residence.calls,'dwell.calls'=dwell.calls))
   }
-  data.table::write.table(state.calls,file = paste0(path.to.file,'all-particle_state-calls.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
-  data.table::write.table(dwell.calls,file = paste0(path.to.file,'all-particle_dwell-calls.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
-  data.table::write.table(residence.calls,file = paste0(path.to.file,'all-particle_residence-calls.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
+  write.table(state.calls,file = paste0(path.to.file,'all-particle_state-calls.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
+  write.table(dwell.calls,file = paste0(path.to.file,'all-particle_dwell-calls.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
+  write.table(residence.calls,file = paste0(path.to.file,'all-particle_residence-calls.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
 }
 
 calc.kn1 <- function(path.to.file,file.name='Refined-Particle_Data.RData',use.auto.times='n',min.residence=0,max.residence=Inf){
