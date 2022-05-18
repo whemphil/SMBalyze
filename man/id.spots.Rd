@@ -25,4 +25,3 @@ Files:
 \item{initial_particle_traces.txt}{Contains signal vs time traces for all identified particles.}
 \item{Initial-Particle_Data.RData}{Contains information from the analysis, including composite image data, initial particle summary data, particle image data, exposure time between images, number of frames, pixel dimensions of images, and radius of integration box.}
 }
-

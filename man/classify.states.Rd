@@ -14,4 +14,3 @@ classify.states(data,signal.step=1000)
 \value{
 Returns a data frame with the following columns: id = The state classification id of each data point in the original data vector, & avg = The average signal value for the state id of each data point in the original data vector.
 }
-

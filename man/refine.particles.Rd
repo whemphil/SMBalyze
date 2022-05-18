@@ -30,4 +30,3 @@ Files:
 \item{all-particle_dwell-calls.txt}{A table containing the automatically called sequential multi-binding states and residence times for each initially identified particle.}
 \item{all-particle_residence-calls.txt}{A table containing the automatically called sequential binary binding states and residence times for each initially identified particle.}
 }
-
