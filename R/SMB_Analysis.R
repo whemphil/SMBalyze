@@ -15,7 +15,7 @@ find.spots <- function(data,box.size,low.lim,high.lim,fill.radius){
   return(final)
 }
 classify.states <- function(data,signal.step=1000){
-  fit=smooth.spline((1:length(data))[is.na(data)==F],na.omit(data),spar = 0.6)
+  fit=smooth.spline((1:length(data))[is.na(data)==F],na.omit(data),spar = 0.5)
   d1=predict(object = fit,x = 1:length(data),deriv = 1)
   swaps=c(1,d1[['x']][(abs(d1[['y']])>=1.0) & (splus2R::peaks(x = abs(d1[['y']]),span = 5))],max(d1[['x']]))
   pos.averages=rep(NA,times=length(data))
@@ -24,10 +24,10 @@ classify.states <- function(data,signal.step=1000){
   for (i in 1:(length(swaps)-1)){
     pos.averages[swaps[i]:swaps[i+1]]=mean(na.omit(data[swaps[i]:swaps[i+1]]))
   }
-  for (j in 0:25){
+  for (j in 0:50){
     states[(pos.averages>=(signal.step*j-signal.step/2)) & (pos.averages<=(signal.step*j+signal.step/2))]=j
   }
-  for (k in 0:25){
+  for (k in 0:50){
     state.averages[states==k]=mean(na.omit(data[states==k]))
   }
   final=as.data.frame(cbind(states,state.averages))
