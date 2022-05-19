@@ -36,7 +36,7 @@ classify.states <- function(data,signal.step=1000){
 }
 
 id.spots <- function(path.to.file,file.name,time.step,spot.box=6,spot.radius=6,spot.min=300,spot.max=Inf){
-  image.raw=tiff::readTIFF(paste0(path.to.file,file.name),all = TRUE,as.is=TRUE)
+  image.raw=suppressWarnings(tiff::readTIFF(paste0(path.to.file,file.name),all = TRUE,as.is=TRUE))
   pixel.size=dim(image.raw[[1]])
   frame.number=length(image.raw)
   image.data=array(NA,dim = c(pixel.size[1],pixel.size[2],frame.number)); for (i in 1:frame.number){image.data[,,i]=image.raw[[i]]}
@@ -121,7 +121,7 @@ refine.particles <- function(path.to.file,file.name='Initial-Particle_Data.RData
     }
   }
   #
-  plot(frame.number*time.step,rowsum(state.calls>0)/nrow(spots),type='l',main='Photobleaching Check',xlab='Time (s)',ylab='Proportion of Bound Particles')
+  plot(frame.number*time.step,rowsum(as.matrix(state.calls>0))/nrow(spots),type='l',main='Photobleaching Check',xlab='Time (s)',ylab='Proportion of Bound Particles')
   temp.3=readline('Proceed with particle refinement? (y/n):  ')
   if (temp.3=='n'){
     stop()
