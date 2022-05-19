@@ -97,7 +97,7 @@ id.spots <- function(path.to.file,file.name,time.step,spot.box=6,spot.radius=6,s
   return(id.spots.output.files)
 }
 
-refine.particles <- function(path.to.file,file.name='Initial-Particle_Data.RData',skip.manual='n',signal.step=1000){
+refine.particles <- function(path.to.file,file.name='Initial-Particle_Data.RData',skip.manual='n',signal.step=1000,auto.filter='none'){
   load(file = paste0(path.to.file,file.name))
   #
   particle.trace.rolls=apply(particle.traces,MARGIN = c(2),FUN = data.table::frollmean,n=5,align='center')
@@ -106,46 +106,57 @@ refine.particles <- function(path.to.file,file.name='Initial-Particle_Data.RData
   dwell.calls=c('Particle','State','Dwell')
   residence.calls=c('Particle','Bound','Residence')
   state.calls=matrix(NA,nrow = frame.number,ncol = nrow(spots))
+  filtering=rep(F,times=nrow(spots))
   COUNTER=0
   for (i in 1:nrow(spots)){
-    if (skip.manual=='n'){
+    states=classify.states(particle.trace.rolls[,i],signal.step)
+    state.calls[,i]=states$id
+    dwell.calls=rbind(dwell.calls,cbind(rep(i,times=length(rle(state.calls[,i])[['values']])),rle(state.calls[,i])[['values']],rle(state.calls[,i])[['lengths']]*time.step))
+    residence.calls=rbind(residence.calls,cbind(rep(i,times=length(rle(state.calls[,i]>=1)[['values']])),rle(state.calls[,i]>=1)[['values']],rle(state.calls[,i]>=1)[['lengths']]*time.step))
+    if  (auto.filter=='unbound') {
+      filtering[i]=(sum(state.calls[,i])==0)
+    }
+    if  (auto.filter=='all.stable') {
+      filtering[i]=(length(table(state.calls[,i]))==1)
+    }
+  }
+  #
+  plot(frame.number*time.step,rowsum(state.calls>0)/nrow(spots),type='l',main='Photobleaching Check',xlab='Time (s)',ylab='Proportion of Bound Particles')
+  temp.3=readline('Proceed with particle refinement? (y/n):  ')
+  if (temp.3=='n'){
+    stop()
+  }
+  #
+  for (i in 1:nrow(spots)){
+    if (skip.manual=='n' & filtering[i]==FALSE){
       par(fig=c(0,1,0.6,1))
       temp.1=matrix(particle.snaps[,,,i],nrow = (2*spot.radius+1),ncol = (2*spot.radius+1)*20)
       image(t(pracma::flipud(rbind(temp.1[,1:(ncol(temp.1)/2)],temp.1[,(ncol(temp.1)/2+1):ncol(temp.1)]))),col=gray.colors(length(temp.1)),axes=FALSE)
       par(fig=c(0,1,0,0.75),new = TRUE)
       plot((1:frame.number)*time.step,particle.trace.rolls[,i],type='l',main = 'Particle Trace',xlab='Time (s)',ylab = 'Signal')
-    }
-    states=classify.states(particle.trace.rolls[,i],signal.step)
-    state.calls[,i]=states$id
-    if (skip.manual=='n'){
       lines(((1:frame.number)*time.step)[is.na(states$avg)==F],states$avg[is.na(states$avg)==F],col='green',lwd=3)
-    }
-    dwell.calls=rbind(dwell.calls,cbind(rep(i,times=length(rle(state.calls[,i])[['values']])),rle(state.calls[,i])[['values']],rle(state.calls[,i])[['lengths']]*time.step))
-    residence.calls=rbind(residence.calls,cbind(rep(i,times=length(rle(state.calls[,i]>=1)[['values']])),rle(state.calls[,i]>=1)[['values']],rle(state.calls[,i]>=1)[['lengths']]*time.step))
-    #
-    if (skip.manual=='n'){
       temp.2=readline('Should this particle be used for analysis? (y/n/quit):  ')
+      if (temp.2=='y'){
+        particles.to.keep[i]=TRUE
+        COUNTER=COUNTER+1
+        event.number=as.numeric(readline('How many binding events will you record for this particle?:  '))
+        event.times=matrix(0,nrow=event.number,ncol = 5); event.times[,1]=rep(COUNTER,times=event.number)
+        for (j in 1:event.number){
+          show('Please click on the starting point then stopping point of a binding event.')
+          event.times[j,2:3]=as.numeric(identify((1:frame.number)*time.step,particle.trace.rolls[,i],n=2)*time.step)
+          event.times[j,4]=diff(event.times[j,2:3])
+          event.times[j,5]=mean(na.omit(particle.trace.rolls[(event.times[j,2]/time.step):(event.times[j,3]/time.step),i]))
+          arrows(x0 = event.times[j,2],x1 = event.times[j,3],y0=mean(na.omit(particle.trace.rolls[(event.times[j,2]/time.step):(event.times[j,3]/time.step),i])),y1=mean(na.omit(particle.trace.rolls[(event.times[j,2]/time.step):(event.times[j,3]/time.step),i])),angle = 90,code = 3,col = 'red')
+        }
+        residence.times=rbind(residence.times,event.times)
+        dev.print(pdf,paste0(path.to.file,'Particle_Trace_',COUNTER,'.pdf'))
+      }
+      if (temp.2=='quit'){
+        stop()
+      }
     }
     if (skip.manual=='y' & i==1){
       temp.2='blank'
-    }
-    if (temp.2=='y' & skip.manual=='n'){
-      particles.to.keep[i]=TRUE
-      COUNTER=COUNTER+1
-      event.number=as.numeric(readline('How many binding events will you record for this particle?:  '))
-      event.times=matrix(0,nrow=event.number,ncol = 5); event.times[,1]=rep(COUNTER,times=event.number)
-      for (j in 1:event.number){
-        show('Please click on the starting point then stopping point of a binding event.')
-        event.times[j,2:3]=as.numeric(identify((1:frame.number)*time.step,particle.trace.rolls[,i],n=2)*time.step)
-        event.times[j,4]=diff(event.times[j,2:3])
-        event.times[j,5]=mean(na.omit(particle.trace.rolls[(event.times[j,2]/time.step):(event.times[j,3]/time.step),i]))
-        arrows(x0 = event.times[j,2],x1 = event.times[j,3],y0=mean(na.omit(particle.trace.rolls[(event.times[j,2]/time.step):(event.times[j,3]/time.step),i])),y1=mean(na.omit(particle.trace.rolls[(event.times[j,2]/time.step):(event.times[j,3]/time.step),i])),angle = 90,code = 3,col = 'red')
-      }
-      residence.times=rbind(residence.times,event.times)
-      dev.print(pdf,paste0(path.to.file,'Particle_Trace_',COUNTER,'.pdf'))
-    }
-    if (temp.2=='quit'){
-      stop()
     }
   }
   residence.calls=as.data.frame(as.matrix(residence.calls[2:nrow(residence.calls),])); for (k in 1:3){residence.calls[,k]=as.numeric(residence.calls[,k])}; colnames(residence.calls)=c('Particle','Bound','Residence')
@@ -166,7 +177,7 @@ refine.particles <- function(path.to.file,file.name='Initial-Particle_Data.RData
     utils::write.table(refined.particle.trace.rolls,file = paste0(path.to.file,'selected_particle_smoothed-traces.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
     utils::write.table(refined.spots,file = paste0(path.to.file,'selected_particle_summary.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
     return(list('image.avg'=image.avg,'residence.data'=residence.data,'refined.particle.traces'=refined.particle.traces,'refined.particle.trace.rolls'=refined.particle.trace.rolls,'refined.spots'=refined.spots,'refined.particle.snaps'=refined.particle.snaps,'state.calls'=state.calls,'residence.calls'=residence.calls,'dwell.calls'=dwell.calls))
-    }
+  }
   if (skip.manual=='y'){
     save(list = c('image.avg','state.calls','residence.calls','dwell.calls'),file = paste0(path.to.file,'Refined-Particle_Data.RData'))
     return(list('image.avg'=image.avg,'state.calls'=state.calls,'residence.calls'=residence.calls,'dwell.calls'=dwell.calls))
