@@ -129,6 +129,7 @@ refine.particles <- function(path.to.file,file.name='Initial-Particle_Data.RData
   #
   for (i in 1:nrow(spots)){
     if (skip.manual=='n' & filtering[i]==FALSE){
+      states=classify.states(particle.trace.rolls[,i],signal.step)
       par(fig=c(0,1,0.6,1))
       temp.1=matrix(particle.snaps[,,,i],nrow = (2*spot.radius+1),ncol = (2*spot.radius+1)*20)
       image(t(pracma::flipud(rbind(temp.1[,1:(ncol(temp.1)/2)],temp.1[,(ncol(temp.1)/2+1):ncol(temp.1)]))),col=gray.colors(length(temp.1)),axes=FALSE)
