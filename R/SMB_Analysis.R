@@ -121,7 +121,7 @@ refine.particles <- function(path.to.file,file.name='Initial-Particle_Data.RData
     }
   }
   #
-  plot(frame.number*time.step,apply(state.calls>0,MARGIN = c(1),FUN = sum)/nrow(spots),type='l',main='Photobleaching Check',xlab='Time (s)',ylab='Proportion of Bound Particles')
+  plot((1:frame.number)*time.step,apply(state.calls>0,MARGIN = c(1),FUN = sum)/nrow(spots),type='l',main='Photobleaching Check',xlab='Time (s)',ylab='Proportion of Bound Particles')
   temp.3=readline('Proceed with particle refinement? (y/n):  ')
   if (temp.3=='n'){
     stop()
