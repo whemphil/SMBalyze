@@ -42,7 +42,7 @@ id.spots <- function(path.to.file,file.name,time.step,spot.box=6,spot.radius=6,s
   image.data=array(NA,dim = c(pixel.size[1],pixel.size[2],frame.number)); for (i in 1:frame.number){image.data[,,i]=image.raw[[i]]}
   image.avg=apply(image.data,MARGIN = c(1,2),FUN = mean)
   #
-  image(t(pracma::flipud(image.avg)),col=gray.colors(cumprod(pixel.size)),x = 1:pixel.size[2],y=1:pixel.size[1],axes=FALSE,xlab='',ylab='')
+  suppressWarnings(image(t(pracma::flipud(image.avg)),col=gray.colors(cumprod(pixel.size)),x = 1:pixel.size[2],y=1:pixel.size[1],axes=FALSE,xlab='',ylab=''))
   check.1=readline(prompt = 'Image loading complete. Proceed with spot detection? (y/n):  '); if (check.1=='n'){stop('SCRIPT ABORTED BY USER')}
   #
   spots=find.spots(image.avg,spot.box,spot.min,spot.max,spot.radius)
@@ -121,7 +121,7 @@ refine.particles <- function(path.to.file,file.name='Initial-Particle_Data.RData
     }
   }
   #
-  plot(frame.number*time.step,rowsum(as.matrix(state.calls>0))/nrow(spots),type='l',main='Photobleaching Check',xlab='Time (s)',ylab='Proportion of Bound Particles')
+  plot(frame.number*time.step,apply(state.calls>0,MARGIN = c(1),FUN = sum)/nrow(spots),type='l',main='Photobleaching Check',xlab='Time (s)',ylab='Proportion of Bound Particles')
   temp.3=readline('Proceed with particle refinement? (y/n):  ')
   if (temp.3=='n'){
     stop()
