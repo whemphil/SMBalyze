@@ -5,7 +5,7 @@
 Function to analyze bining states of particles from single molecule biophysics microscopy experiments.
 }
 \usage{
-refine.particles(path.to.file,file.name='Initial-Particle_Data.RData',skip.manual='n',signal.step=NULL,auto.filter='none',classification.strategy='classic',background.subtraction='k.mode')
+refine.particles(path.to.file,file.name='Initial-Particle_Data.RData',skip.manual='n',signal.step=NULL,auto.filter='none',classification.strategy='classic',background.subtraction='lower.quartile')
 }
 \arguments{
 \item{path.to.file}{Path to the directory where the import file(s) are located. Write-out files will also be exported to this directory.}
