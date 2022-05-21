@@ -5,15 +5,17 @@
 Function to analyze bining states of particles from single molecule biophysics microscopy experiments.
 }
 \usage{
-refine.particles(path.to.file,file.name='Initial-Particle_Data.RData',skip.manual='n',signal.step=1000,auto.filter='none')
+refine.particles(path.to.file,file.name='Initial-Particle_Data.RData',skip.manual='n',signal.step=NULL,auto.filter='none',classification.strategy='classic',background.subtraction='k.mode')
 }
 \arguments{
 \item{path.to.file}{Path to the directory where the import file(s) are located. Write-out files will also be exported to this directory.}
 \item{file.name}{The name of the tiff file that contains the stacked images to be analyzed.}
 \item{time.step}{A single numerical value, representing the exposure time-step between images in the input file.}
 \item{skip.manual}{A single character string, either 'y' (yes) or 'n' (no), defining if manual particle selection should be skipped.  DEFAULT = 'n'.}
-\item{signal.step}{A single numerical value, representing the change in signal associated with a single binding event.  DEFAULT = 1000.}
+\item{signal.step}{A single numerical value, representing the change in signal associated with a single binding event when the 'classification.strategy' argument is set to 'supervised'. DEFAULT = NULL, which approximates the parameter from signal variance in the data.}
 \item{auto.filter}{A single character string, defining which particle traces should be automatically filtered out if skip.manual='n'. Can be 'unbound', to filter out particle traces that remain in an unbound state the entire time, or 'all.stable', to filter out particle traces that remain in ANY single state the entire time. DEFAULT = 'none'.}
+\item{classification.strategy}{A single character string, designating the approach used for binding state classification from signal vs time data; can be 'classic', 'uni.dbscan', or 'var.shift'. DEFAULT = 'classic'.}
+\item{background.substraction}{A single character string, designating the approach used for subtracting background from the signal vs time plots to set unbound state averages to ~0 signal; can be 'k.mode' (uses the kernel density mode from signal vs time data as the baseline) or 'basal.states' (uses the median signal of particles' minimum states over time as the baseline). DEFAULT = 'k.mode'.}
 }
 \value{
 Returns a list with the following components:  image.avg = a numerical matrix containing data for a composite image of parent microscopy images, residence.data = a data frame describing manually identified binding states for selected particles, including columns for particle id, start time, end time, residence time, and signal average for each state, refined.particle.traces = a matrix containing signal vs time data for each selected particle, refined.particle.trace.rolls = a matrix containing smoothed signal vs time data for each selected particle, refined.spots = a data frame containing indices and volume information for all selected particles, refined.particle.snaps = an array providing image data for selected particles across time frames, state.calls = a numerical matrix containing automatically called state vs time information for all initially identified particles, residence.calls = a data frame containing the automatically called sequential binary binding states and residence times for each initially identified particle, & dwell.calls = a data frame containing the automatically called sequential multi-binding states and residence times for each initially identified particle.

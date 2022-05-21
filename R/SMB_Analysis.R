@@ -1,41 +1,15 @@
-k.mode <- function(data){
-  k=density(data)
-  mode=k[['x']][which.max(k[['y']])]
-  return(mode)
-}
-find.spots <- function(data,box.size,low.lim,high.lim,fill.radius){
-  peeks=splus2R::peaks(data,span = 2*box.size+1,strict = T)*t(splus2R::peaks(t(data),span = 2*box.size+1,strict = T))
-  col.id=matrix(1:ncol(peeks),nrow = nrow(peeks),ncol = ncol(peeks),byrow = TRUE)
-  row.id=matrix(1:nrow(peeks),nrow = nrow(peeks),ncol = ncol(peeks),byrow = FALSE)
-  rows=c(row.id[peeks==1]); cols=c(col.id[peeks==1])
-  vols=rep(0,times=sum(peeks)); for (i in 1:length(vols)){if(rows[i]>fill.radius & rows[i]<(nrow(data)-fill.radius) & cols[i]>fill.radius & cols[i]<(nrow(data)-fill.radius)){vols[i]=sum(data[(rows[i]-fill.radius):(rows[i]+fill.radius),(cols[i]-fill.radius):(cols[i]+fill.radius)])-median(data[(rows[i]-fill.radius):(rows[i]+fill.radius),(cols[i]-fill.radius):(cols[i]+fill.radius)])*(2*fill.radius+1)^2}}
-  spots=list('x'=cols[(vols>=low.lim & vols<=high.lim)],'y'=((nrow(data)+1)-rows)[(vols>=low.lim & vols<=high.lim)],'row'=rows[(vols>=low.lim & vols<=high.lim)],'col'=cols[(vols>=low.lim & vols<=high.lim)],'vol'=vols[(vols>=low.lim & vols<=high.lim)])
-  final=as.data.frame(cbind(spots[['x']],spots[['y']],spots[['row']],spots[['col']],spots[['vol']]));colnames(final)=col.names = c('x','y','row','col','vol')
-  final=final[order(final$vol),]
-  return(final)
-}
-classify.states <- function(data,signal.step=1000){
-  fit=smooth.spline((1:length(data))[is.na(data)==F],na.omit(data),spar = 0.5)
-  d1=predict(object = fit,x = 1:length(data),deriv = 1)
-  swaps=c(1,d1[['x']][(abs(d1[['y']])>=1.0) & (splus2R::peaks(x = abs(d1[['y']]),span = 5))],max(d1[['x']]))
-  pos.averages=rep(NA,times=length(data))
-  states=rep(0,times=length(data))
-  state.averages=rep(NA,times=length(data))
-  for (i in 1:(length(swaps)-1)){
-    pos.averages[swaps[i]:swaps[i+1]]=mean(na.omit(data[swaps[i]:swaps[i+1]]))
-  }
-  for (j in 0:50){
-    states[(pos.averages>=(signal.step*j-signal.step/2)) & (pos.averages<=(signal.step*j+signal.step/2))]=j
-  }
-  for (k in 0:50){
-    state.averages[states==k]=mean(na.omit(data[states==k]))
-  }
-  final=as.data.frame(cbind(states,state.averages))
-  colnames(final)=c('id','avg')
-  return(final)
-}
-
 id.spots <- function(path.to.file,file.name,time.step,spot.box=6,spot.radius=6,spot.min=300,spot.max=Inf){
+  find.spots <- function(data,box.size,low.lim,high.lim,fill.radius){
+    peeks=splus2R::peaks(data,span = 2*box.size+1,strict = T)*t(splus2R::peaks(t(data),span = 2*box.size+1,strict = T))
+    col.id=matrix(1:ncol(peeks),nrow = nrow(peeks),ncol = ncol(peeks),byrow = TRUE)
+    row.id=matrix(1:nrow(peeks),nrow = nrow(peeks),ncol = ncol(peeks),byrow = FALSE)
+    rows=c(row.id[peeks==1]); cols=c(col.id[peeks==1])
+    vols=rep(0,times=sum(peeks)); for (i in 1:length(vols)){if(rows[i]>fill.radius & rows[i]<(nrow(data)-fill.radius) & cols[i]>fill.radius & cols[i]<(nrow(data)-fill.radius)){vols[i]=sum(data[(rows[i]-fill.radius):(rows[i]+fill.radius),(cols[i]-fill.radius):(cols[i]+fill.radius)])-median(data[(rows[i]-fill.radius):(rows[i]+fill.radius),(cols[i]-fill.radius):(cols[i]+fill.radius)])*(2*fill.radius+1)^2}}
+    spots=list('x'=cols[(vols>=low.lim & vols<=high.lim)],'y'=((nrow(data)+1)-rows)[(vols>=low.lim & vols<=high.lim)],'row'=rows[(vols>=low.lim & vols<=high.lim)],'col'=cols[(vols>=low.lim & vols<=high.lim)],'vol'=vols[(vols>=low.lim & vols<=high.lim)])
+    final=as.data.frame(cbind(spots[['x']],spots[['y']],spots[['row']],spots[['col']],spots[['vol']]));colnames(final)=col.names = c('x','y','row','col','vol')
+    final=final[order(final$vol),]
+    return(final)
+  }
   image.raw=suppressWarnings(tiff::readTIFF(paste0(path.to.file,file.name),all = TRUE,as.is=TRUE))
   pixel.size=dim(image.raw[[1]])
   frame.number=length(image.raw)
@@ -87,7 +61,6 @@ id.spots <- function(path.to.file,file.name,time.step,spot.box=6,spot.radius=6,s
       particle.snaps[,,j,i]=apply(image.data[(spots$row[i]-spot.radius):(spots$row[i]+spot.radius),(spots$col[i]-spot.radius):(spots$col[i]+spot.radius),((j-1)*snap.length+1):(j*snap.length)],MARGIN = c(1,2),FUN = mean)
     }
   }
-  particle.traces=particle.traces-k.mode(particle.traces)
   row.names(particle.traces)=time.step*(1:frame.number)
   #
   utils::write.table(spots,file = paste0(path.to.file,'initial_particle_summary.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
@@ -97,20 +70,136 @@ id.spots <- function(path.to.file,file.name,time.step,spot.box=6,spot.radius=6,s
   return(id.spots.output.files)
 }
 
-refine.particles <- function(path.to.file,file.name='Initial-Particle_Data.RData',skip.manual='n',signal.step=1000,auto.filter='none'){
+refine.particles <- function(path.to.file,file.name='Initial-Particle_Data.RData',skip.manual='n',signal.step=NULL,auto.filter='none',classification.strategy='classic',background.subtraction='k.mode'){
+  k.mode <- function(data){
+    k=density(data)
+    mode=k[['x']][which.max(k[['y']])]
+    return(mode)
+  }
+  classify.states <- function(data,signal.step=1000,fun='classic'){
+    if (fun=='classic'){
+      fit=smooth.spline((1:length(data))[is.na(data)==F],na.omit(data),spar = 0.5)
+      d1=predict(object = fit,x = 1:length(data),deriv = 1)
+      swaps=c(1,d1[['x']][(abs(d1[['y']])>=1.0) & (splus2R::peaks(x = abs(d1[['y']]),span = 5))],max(d1[['x']]))
+      pos.averages=rep(NA,times=length(data))
+      states=rep(0,times=length(data))
+      state.averages=rep(NA,times=length(data))
+      for (i in 1:(length(swaps)-1)){
+        pos.averages[swaps[i]:swaps[i+1]]=mean(na.omit(data[swaps[i]:swaps[i+1]]))
+      }
+      for (j in 0:50){
+        states[(pos.averages>=(signal.step*j-signal.step/2)) & (pos.averages<=(signal.step*j+signal.step/2))]=j
+      }
+      for (k in 0:50){
+        state.averages[states==k]=mean(na.omit(data[states==k]))
+      }
+      final=as.data.frame(cbind(states,state.averages))
+      colnames(final)=c('id','avg')
+      return(final)
+    }
+    if (fun=='basic'){
+      pos.averages=matrix(NA,ncol = ncol(data),nrow = nrow(data))
+      for (n in 1:ncol(data)){
+        fit=smooth.spline((1:length(data[,n]))[is.na(data[,n])==F],na.omit(data[,n]),spar = 0.5)
+        d1=predict(object = fit,x = 1:length(data[,n]),deriv = 1)
+        swaps=c(1,d1[['x']][(abs(d1[['y']])>=1.0) & (splus2R::peaks(x = abs(d1[['y']]),span = 5))],max(d1[['x']]))
+        for (i in 1:(length(swaps)-1)){
+          pos.averages[swaps[i]:swaps[i+1],n]=mean(na.omit(data[swaps[i]:swaps[i+1],n]))
+        }
+      }
+      final=pos.averages
+      return(final)
+    }
+    if (fun=='uni.dbscan'){
+      pos.averages=matrix(NA,ncol = ncol(data),nrow = nrow(data))
+      for (n in 1:ncol(data)){
+        fit=smooth.spline((1:length(data[,n]))[is.na(data[,n])==F],na.omit(data[,n]),spar = 0.5)
+        d1=predict(object = fit,x = 1:length(data[,n]),deriv = 1)
+        swaps=c(1,d1[['x']][(abs(d1[['y']])>=1.0) & (splus2R::peaks(x = abs(d1[['y']]),span = 5))],max(d1[['x']]))
+        for (i in 1:(length(swaps)-1)){
+          pos.averages[swaps[i]:swaps[i+1],n]=mean(na.omit(data[swaps[i]:swaps[i+1],n]))
+        }
+      }
+      uni.dbscan <- function(datter,eps){
+        temp.0=order(c(datter))
+        temp.1=datter[temp.0]
+        temp.2=c(abs(temp.1[1:(length(temp.1)-1)]-temp.1[2:length(temp.1)]),0)>eps
+        temp.3=c(1,(1:length(temp.2))[temp.2],length(temp.2))
+        temp.4=rep(NA,times=length(temp.2))
+        for (i in 0:(length(temp.3)-2)){
+          temp.4[(temp.3[i+1]):(temp.3[i+2])]=i
+        }
+        temp.5=matrix(temp.4[order(temp.0)],nrow = nrow(datter),ncol = ncol(datter))
+        return(temp.5)
+      }
+      classes=uni.dbscan(pos.averages,eps = 1*sd(na.omit(data-pos.averages)))
+      values=matrix(NA,nrow = nrow(classes),ncol = ncol(classes))
+      for (k in 0:max(classes)){
+        values[classes==k]=mean(na.omit(data[classes==k]))
+      }
+      final=list('id'=classes,'avg'=values)
+      return(final)
+    }
+    if (fun=='var.shift'){
+      pos.averages=rep(NA,times=length(data))
+      fit=smooth.spline((1:length(data))[is.na(data)==F],na.omit(data),spar = 0.5)
+      d1=predict(object = fit,x = 1:length(data),deriv = 1)
+      swaps=c(1,d1[['x']][(abs(d1[['y']])>=1.0) & (splus2R::peaks(x = abs(d1[['y']]),span = 5))],max(d1[['x']]))
+      for (i in 1:(length(swaps)-1)){
+        pos.averages[swaps[i]:swaps[i+1]]=mean(na.omit(data[swaps[i]:swaps[i+1]]))
+      }
+      var.shift <- function(datter,eps){
+        temp.0=order(datter)
+        temp.1=datter[temp.0]
+        temp.2=c(abs(temp.1[1:(length(temp.1)-1)]-temp.1[2:length(temp.1)]),0)>eps
+        temp.3=c(1,(1:length(temp.2))[temp.2],length(temp.2))
+        temp.4=rep(NA,times=length(temp.2))
+        for (i in 1:(length(temp.3)-1)){
+          temp.4[(temp.3[i]):(temp.3[i+1])]=i
+        }
+        temp.5=temp.4[order(temp.0)]
+        return(temp.5)
+      }
+      classes=var.shift(pos.averages,eps = 1.7*sd(na.omit(data-pos.averages)))
+      values=rep(NA,times=length(classes))
+      for (k in 0:max(classes)){
+        values[classes==k]=mean(na.omit(data[classes==k]))
+      }
+      classes[abs(values)<=2*sd(na.omit(data-pos.averages))]=0
+      final=data.frame('id'=classes,'avg'=values)
+      return(final)
+    }
+  }
   load(file = paste0(path.to.file,file.name))
   #
   particle.trace.rolls=apply(particle.traces,MARGIN = c(2),FUN = data.table::frollmean,n=5,align='center')
+  if (background.subtraction=='k.mode'){
+    particle.trace.rolls=particle.trace.rolls-k.mode(na.omit(particle.trace.rolls))
+  }
+  if (background.subtraction=='basal.states'){
+    particle.trace.rolls=particle.trace.rolls-median(na.omit(apply(classify.states(particle.trace.rolls,fun = 'basic'),MARGIN = c(2),FUN = min)))
+  }
   particles.to.keep=rep(FALSE,times=nrow(spots))
   residence.times=c('Particle','Start','Stop','Residence','State Signal')
   dwell.calls=c('Particle','State','Dwell')
   residence.calls=c('Particle','Bound','Residence')
-  state.calls=matrix(NA,nrow = frame.number,ncol = nrow(spots))
+  if (classification.strategy=='classic' | classification.strategy=='var.shift'){
+    state.calls=matrix(NA,nrow = frame.number,ncol = nrow(spots))
+    if (is.null(signal.step)==TRUE){
+      signal.step=2.5*sd(na.omit(particle.trace.rolls-classify.states(particle.trace.rolls,fun = 'basic')))
+    }
+  }
+  if (classification.strategy=='uni.dbscan'){
+    classifications=classify.states(particle.trace.rolls,fun = 'uni.dbscan')
+    state.calls=classifications[['id']]
+  }
   filtering=rep(F,times=nrow(spots))
   COUNTER=0
   for (i in 1:nrow(spots)){
-    states=classify.states(particle.trace.rolls[,i],signal.step)
-    state.calls[,i]=states$id
+    if (classification.strategy=='classic' | classification.strategy=='var.shift'){
+      states=classify.states(particle.trace.rolls[,i],signal.step,fun = classification.strategy)
+      state.calls[,i]=states$id
+    }
     dwell.calls=rbind(dwell.calls,cbind(rep(i,times=length(rle(state.calls[,i])[['values']])),rle(state.calls[,i])[['values']],rle(state.calls[,i])[['lengths']]*time.step))
     residence.calls=rbind(residence.calls,cbind(rep(i,times=length(rle(state.calls[,i]>=1)[['values']])),rle(state.calls[,i]>=1)[['values']],rle(state.calls[,i]>=1)[['lengths']]*time.step))
     if  (auto.filter=='unbound') {
@@ -129,7 +218,12 @@ refine.particles <- function(path.to.file,file.name='Initial-Particle_Data.RData
   #
   for (i in 1:nrow(spots)){
     if (skip.manual=='n' & filtering[i]==FALSE){
-      states=classify.states(particle.trace.rolls[,i],signal.step)
+      if (classification.strategy=='classic' | classification.strategy=='var.shift'){
+        states=classify.states(particle.trace.rolls[,i],signal.step,fun = classification.strategy)
+      }
+      if (classification.strategy=='uni.dbscan'){
+        states=data.frame('id'=classifications[['id']][,i],'avg'=classifications[['avg']][,i])
+      }
       par(fig=c(0,1,0.6,1))
       temp.1=matrix(particle.snaps[,,,i],nrow = (2*spot.radius+1),ncol = (2*spot.radius+1)*20)
       image(t(pracma::flipud(rbind(temp.1[,1:(ncol(temp.1)/2)],temp.1[,(ncol(temp.1)/2+1):ncol(temp.1)]))),col=gray.colors(length(temp.1)),axes=FALSE)
