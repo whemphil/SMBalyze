@@ -70,7 +70,7 @@ id.spots <- function(path.to.file,file.name,time.step,spot.box=6,spot.radius=6,s
   return(id.spots.output.files)
 }
 
-refine.particles <- function(path.to.file,file.name='Initial-Particle_Data.RData',skip.manual='n',signal.step=NULL,auto.filter='none',classification.strategy='classic',background.subtraction='k.mode'){
+refine.particles <- function(path.to.file,file.name='Initial-Particle_Data.RData',skip.manual='n',signal.step=NULL,auto.filter='none',classification.strategy='classic',background.subtraction='lower.quartile'){
   k.mode <- function(data){
     k=density(data)
     mode=k[['x']][which.max(k[['y']])]
@@ -178,6 +178,9 @@ refine.particles <- function(path.to.file,file.name='Initial-Particle_Data.RData
   }
   if (background.subtraction=='basal.states'){
     particle.trace.rolls=particle.trace.rolls-median(na.omit(apply(classify.states(particle.trace.rolls,fun = 'basic'),MARGIN = c(2),FUN = min)))
+  }
+  if (background.subtraction=='lower.quartile'){
+    particle.trace.rolls=particle.trace.rolls-(c(na.omit(classify.states(particle.trace.rolls,fun = 'basic')))[order(c(na.omit(classify.states(particle.trace.rolls,fun = 'basic'))))])[round(0.25*length(c(na.omit(classify.states(particle.trace.rolls,fun = 'basic')))))]
   }
   particles.to.keep=rep(FALSE,times=nrow(spots))
   residence.times=c('Particle','Start','Stop','Residence','State Signal')
