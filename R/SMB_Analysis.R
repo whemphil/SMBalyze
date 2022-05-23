@@ -1,7 +1,14 @@
-id.spots <- function(path.to.file,file.name,time.step,spot.box=6,spot.radius=6,spot.min=300,spot.max=Inf,spot.picking='composite',r.pick=2.9,min.pick=5){
-  find.spots <- function(data,box.size,low.lim,high.lim,fill.radius,spot.picking,r.pick,min.pick){
-    if (spot.picking=='composite'){
-      peeks=splus2R::peaks(data,span = 2*box.size+1,strict = T)*t(splus2R::peaks(t(data),span = 2*box.size+1,strict = T))
+id.spots <- function(path.to.file,file.name,time.step,spot.box=6,spot.radius=6,spot.min=NULL,spot.max=Inf,spot.picking='composite'){
+  find.spots <- function(data,box.size,low.lim,high.lim,fill.radius,spot.picking){
+    vol.calc <- function(input,x,y,radius){
+      result=sum(input[(x-radius):(x+radius),(y-radius):(y+radius)])-median(data[(x-radius):(x+radius),(y-radius):(y+radius)])*(2*radius+1)^2
+      return(result)
+    }
+    if (spot.picking=='composite.old'){
+      if (is.null(low.lim)==TRUE){
+        low.lim=200
+      }
+      peeks=splus2R::peaks(data,span = 2*box.size+1)*t(splus2R::peaks(t(data),span = 2*box.size+1))
       col.id=matrix(1:ncol(peeks),nrow = nrow(peeks),ncol = ncol(peeks),byrow = TRUE)
       row.id=matrix(1:nrow(peeks),nrow = nrow(peeks),ncol = ncol(peeks),byrow = FALSE)
       rows=c(row.id[peeks==1]); cols=c(col.id[peeks==1])
@@ -11,19 +18,64 @@ id.spots <- function(path.to.file,file.name,time.step,spot.box=6,spot.radius=6,s
       final=final[order(final$vol),]
       return(final)
     }
+    if (spot.picking=='composite'){
+      if (is.null(low.lim)==TRUE){
+        low.lim=200
+      }
+      col.id=t(array(1:dim(data)[2],dim = dim(data)[c(2,1)]))
+      row.id=array(1:dim(data)[1],dim = dim(data))
+      peeks=array(F,dim = dim(col.id))
+      volumes=array(0,dim = dim(col.id))
+      for (x in (1+max(c(box.size,fill.radius))):(dim(peeks)[1]-max(c(box.size,fill.radius)))){
+        for (y in (1+max(c(box.size,fill.radius))):(dim(peeks)[2]-max(c(box.size,fill.radius)))){
+          peeks[x,y]=(data[x,y]==max(data[(x-box.size):(x+box.size),(y-box.size):(y+box.size)]) & sum(data[(x-box.size):(x+box.size),(y-box.size):(y+box.size)]==max(data[(x-box.size):(x+box.size),(y-box.size):(y+box.size)]))==1)
+          if (peeks[x,y]==TRUE){
+            volumes[x,y]=vol.calc(data,x,y,fill.radius)
+          }
+        }
+      }
+      rows=c(row.id[peeks==T])
+      cols=c(col.id[peeks==T])
+      vols=c(volumes[peeks==T])
+      spots=data.frame('x'=cols[(vols>=low.lim & vols<=high.lim)],'y'=((dim(data)[1]+1)-rows)[(vols>=low.lim & vols<=high.lim)],'row'=rows[(vols>=low.lim & vols<=high.lim)],'col'=cols[(vols>=low.lim & vols<=high.lim)],'vol'=vols[(vols>=low.lim & vols<=high.lim)])
+      final=spots[order(spots$vol),]
+      return(final)
+    }
     if (spot.picking=='all.frames'){
-      spots=list(NULL)
-      peeks=splus2R::peaks(data,span = 2*box.size+1,strict = T)*aperm(splus2R::peaks(aperm(data,c(2,1,3)),span = 2*box.size+1,strict = T),c(2,1,3))
-      col.id=aperm(array(1:dim(peeks)[2],dim = dim(peeks)[c(2,1,3)]),c(2,1,3))
-      row.id=array(1:dim(peeks)[1],dim = dim(peeks))
-      layer.id=array(rep(1:dim(peeks)[3],each=dim(peeks)[1]*dim(peeks)[2]),dim = dim(peeks))
-      rows=c(row.id[peeks==1]); cols=c(col.id[peeks==1]); layers=c(layer.id[peeks==1])
-      vols=rep(0,times=sum(peeks)); for (j in 1:length(vols)){if(rows[j]>fill.radius & rows[j]<(dim(data)[1]-fill.radius) & cols[j]>fill.radius & cols[j]<(dim(data)[1]-fill.radius)){vols[j]=sum(data[(rows[j]-fill.radius):(rows[j]+fill.radius),(cols[j]-fill.radius):(cols[j]+fill.radius),layers[j]])-median(data[(rows[j]-fill.radius):(rows[j]+fill.radius),(cols[j]-fill.radius):(cols[j]+fill.radius),layers[j]])*(2*fill.radius+1)^2}}
-      spots=data.frame('frame'=layers[(vols>=low.lim & vols<=high.lim)],'x'=cols[(vols>=low.lim & vols<=high.lim)],'y'=((dim(data)[1]+1)-rows)[(vols>=low.lim & vols<=high.lim)],'row'=rows[(vols>=low.lim & vols<=high.lim)],'col'=cols[(vols>=low.lim & vols<=high.lim)],'vol'=vols[(vols>=low.lim & vols<=high.lim)])
-      clusters=dbscan::dbscan(spots[,2:3],eps = r.pick,minPts = min.pick)[['cluster']]
-      particles=aggregate(x=as.data.frame(cbind(spots[,2:6],'cluster'=clusters)),by = cluster,FUN = mean)
-      particles=particles[particles$cluster!=0,]; particles=particles[order(particles$vol),]; particles$col=round(particles$col); particles$row=round(particles$row)
-      return(particles)
+      rg.calc <- function(input){
+        fit=smooth.spline((1:length(input)),input,spar = 0.5)
+        rang=diff(range(fit[['y']]))/sd(fit[['yin']]-fit[['y']])
+        return(rang)
+      }
+      if (is.null(low.lim)==TRUE){
+        low.lim=0
+      }
+      data.all=data
+      data=apply(data.all,MARGIN = c(1,2),FUN = mean)
+      col.id=t(array(1:dim(data)[2],dim = dim(data)[c(2,1)]))
+      row.id=array(1:dim(data)[1],dim = dim(data))
+      peeks=array(F,dim = dim(col.id))
+      volumes=array(0,dim = dim(col.id))
+      ranges=array(0,dim = dim(col.id))
+      for (x in (1+max(c(box.size,fill.radius))):(dim(peeks)[1]-max(c(box.size,fill.radius)))){
+        for (y in (1+max(c(box.size,fill.radius))):(dim(peeks)[2]-max(c(box.size,fill.radius)))){
+          peeks[x,y]=(data[x,y]==max(data[(x-box.size):(x+box.size),(y-box.size):(y+box.size)]) & sum(data[(x-box.size):(x+box.size),(y-box.size):(y+box.size)]==max(data[(x-box.size):(x+box.size),(y-box.size):(y+box.size)]))==1)
+          if (peeks[x,y]==TRUE){
+            volumes[x,y]=vol.calc(data,x,y,fill.radius)
+            if (volumes[x,y]>=low.lim){
+              ranges[x,y]=rg.calc(apply(data.all,MARGIN = c(3),FUN = vol.calc,x=x,y=y,radius=fill.radius))
+            }
+          }
+        }
+      }
+      rows=c(row.id[peeks==T])
+      cols=c(col.id[peeks==T])
+      vols=c(volumes[peeks==T])
+      rgs=c(ranges[peeks==T])
+      rg.min=2.5
+      spots=data.frame('x'=cols[(vols>=low.lim & vols<=high.lim & rgs>=rg.min)],'y'=((dim(data)[1]+1)-rows)[(vols>=low.lim & vols<=high.lim & rgs>=rg.min)],'row'=rows[(vols>=low.lim & vols<=high.lim & rgs>=rg.min)],'col'=cols[(vols>=low.lim & vols<=high.lim & rgs>=rg.min)],'vol'=vols[(vols>=low.lim & vols<=high.lim & rgs>=rg.min)])
+      final=spots[order(spots$vol),]
+      return(final)
     }
   }
   image.raw=suppressWarnings(tiff::readTIFF(paste0(path.to.file,file.name),all = TRUE,as.is=TRUE))
@@ -84,7 +136,7 @@ id.spots <- function(path.to.file,file.name,time.step,spot.box=6,spot.radius=6,s
     show(paste0('Number of particles identified = ',length(spots$x)))
     check.2=readline(prompt = 'Is initial particle selection acceptable? (y/n/quit):  ')
     if (check.2=='quit'){
-      stop()
+      stop('SCRIPT ABORTED BY USER')
     }
   }
   #
@@ -252,7 +304,7 @@ refine.particles <- function(path.to.file,file.name='Initial-Particle_Data.RData
   plot((1:frame.number)*time.step,apply(state.calls>0,MARGIN = c(1),FUN = sum)/nrow(spots),type='l',main='Photobleaching Check',xlab='Time (s)',ylab='Proportion of Bound Particles')
   temp.3=readline('Proceed with particle refinement? (y/n):  ')
   if (temp.3=='n'){
-    stop()
+    stop('SCRIPT ABORTED BY USER')
   }
   #
   for (i in 1:nrow(spots)){
@@ -286,7 +338,7 @@ refine.particles <- function(path.to.file,file.name='Initial-Particle_Data.RData
         dev.print(pdf,paste0(path.to.file,'Particle_Trace_',COUNTER,'.pdf'))
       }
       if (temp.2=='quit'){
-        stop()
+        stop('SCRIPT ABORTED BY USER')
       }
     }
     if (skip.manual=='y' & i==1){
