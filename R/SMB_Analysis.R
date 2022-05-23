@@ -88,10 +88,10 @@ id.spots <- function(path.to.file,file.name,time.step,spot.box=6,spot.radius=6,s
   check.1=readline(prompt = 'Image loading complete. Proceed with spot detection? (y/n):  '); if (check.1=='n'){stop('SCRIPT ABORTED BY USER')}
   #
   if (spot.picking=='composite'){
-    spots=find.spots(image.avg,spot.box,spot.min,spot.max,spot.radius,spot.picking,r.pick,min.pick)
+    spots=find.spots(image.avg,spot.box,spot.min,spot.max,spot.radius,spot.picking)
   }
   if (spot.picking=='all.frames'){
-    spots=find.spots(image.data,spot.box,spot.min,spot.max,spot.radius,spot.picking,r.pick,min.pick)
+    spots=find.spots(image.data,spot.box,spot.min,spot.max,spot.radius,spot.picking)
   }
   points(spots$x,spots$y,col='red',cex=1.2)
   show(paste0('Median particle intensity = ',median(spots$vol)))
@@ -108,27 +108,17 @@ id.spots <- function(path.to.file,file.name,time.step,spot.box=6,spot.radius=6,s
     }
     spot.min=as.numeric(readline(prompt = 'New spot minimum signal (ENTER for default):  '))
     if (is.na(spot.min)==T){
-      spot.min=300
+      spot.min=200
     }
     spot.max=as.numeric(readline(prompt = 'New spot maximum signal (ENTER for default):  '))
     if (is.na(spot.max)==T){
       spot.max=Inf
     }
-    if (spot.picking=='all.frames'){
-      r.pick=as.numeric(readline(prompt = 'New spot merging radius (ENTER for default):  '))
-      if (is.na(r.pick)==T){
-        r.pick=2.9
-      }
-      min.pick=as.numeric(readline(prompt = 'New spot number minimum (ENTER for default):  '))
-      if (is.na(min.pick)==T){
-        min.pick=5
-      }
-    }
     if (spot.picking=='composite'){
-      spots=find.spots(image.avg,spot.box,spot.min,spot.max,spot.radius,spot.picking,r.pick,min.pick)
+      spots=find.spots(image.avg,spot.box,spot.min,spot.max,spot.radius,spot.picking)
     }
     if (spot.picking=='all.frames'){
-      spots=find.spots(image.data,spot.box,spot.min,spot.max,spot.radius,spot.picking,r.pick,min.pick)
+      spots=find.spots(image.data,spot.box,spot.min,spot.max,spot.radius,spot.picking)
     }
     image(t(pracma::flipud(image.avg)),col=gray.colors(cumprod(pixel.size)),x = 1:pixel.size[2],y=1:pixel.size[1],axes=FALSE,xlab='',ylab='')
     points(spots$x,spots$y,col='red',cex=1.2)
