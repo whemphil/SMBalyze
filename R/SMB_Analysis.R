@@ -1,26 +1,17 @@
 id.spots <- function(path.to.file,file.name,time.step,spot.box=6,spot.radius=6,spot.min=NULL,spot.max=Inf,spot.picking='composite'){
   find.spots <- function(data,box.size,low.lim,high.lim,fill.radius,spot.picking){
-    vol.calc <- function(input,x,y,radius){
-      result=sum(input[(x-radius):(x+radius),(y-radius):(y+radius)])-median(data[(x-radius):(x+radius),(y-radius):(y+radius)])*(2*radius+1)^2
+    lq.calc <- function(input){
+      input.2=na.omit(c(input))
+      result=(input.2[order(input.2)])[round(0.25*length(input.2))]
       return(result)
     }
-    if (spot.picking=='composite.old'){
-      if (is.null(low.lim)==TRUE){
-        low.lim=200
-      }
-      peeks=splus2R::peaks(data,span = 2*box.size+1)*t(splus2R::peaks(t(data),span = 2*box.size+1))
-      col.id=matrix(1:ncol(peeks),nrow = nrow(peeks),ncol = ncol(peeks),byrow = TRUE)
-      row.id=matrix(1:nrow(peeks),nrow = nrow(peeks),ncol = ncol(peeks),byrow = FALSE)
-      rows=c(row.id[peeks==1]); cols=c(col.id[peeks==1])
-      vols=rep(0,times=sum(peeks)); for (i in 1:length(vols)){if(rows[i]>fill.radius & rows[i]<(nrow(data)-fill.radius) & cols[i]>fill.radius & cols[i]<(nrow(data)-fill.radius)){vols[i]=sum(data[(rows[i]-fill.radius):(rows[i]+fill.radius),(cols[i]-fill.radius):(cols[i]+fill.radius)])-median(data[(rows[i]-fill.radius):(rows[i]+fill.radius),(cols[i]-fill.radius):(cols[i]+fill.radius)])*(2*fill.radius+1)^2}}
-      spots=list('x'=cols[(vols>=low.lim & vols<=high.lim)],'y'=((nrow(data)+1)-rows)[(vols>=low.lim & vols<=high.lim)],'row'=rows[(vols>=low.lim & vols<=high.lim)],'col'=cols[(vols>=low.lim & vols<=high.lim)],'vol'=vols[(vols>=low.lim & vols<=high.lim)])
-      final=as.data.frame(cbind(spots[['x']],spots[['y']],spots[['row']],spots[['col']],spots[['vol']]));colnames(final)=col.names = c('x','y','row','col','vol')
-      final=final[order(final$vol),]
-      return(final)
+    vol.calc <- function(input,x,y,radius){
+      result=sum(input[(x-radius):(x+radius),(y-radius):(y+radius)])-lq.calc(data[(x-radius):(x+radius),(y-radius):(y+radius)])*(2*radius+1)^2
+      return(result)
     }
     if (spot.picking=='composite'){
       if (is.null(low.lim)==TRUE){
-        low.lim=200
+        low.lim=500
       }
       col.id=t(array(1:dim(data)[2],dim = dim(data)[c(2,1)]))
       row.id=array(1:dim(data)[1],dim = dim(data))
@@ -72,7 +63,7 @@ id.spots <- function(path.to.file,file.name,time.step,spot.box=6,spot.radius=6,s
       cols=c(col.id[peeks==T])
       vols=c(volumes[peeks==T])
       rgs=c(ranges[peeks==T])
-      rg.min=2.5
+      rg.min=3
       spots=data.frame('x'=cols[(vols>=low.lim & vols<=high.lim & rgs>=rg.min)],'y'=((dim(data)[1]+1)-rows)[(vols>=low.lim & vols<=high.lim & rgs>=rg.min)],'row'=rows[(vols>=low.lim & vols<=high.lim & rgs>=rg.min)],'col'=cols[(vols>=low.lim & vols<=high.lim & rgs>=rg.min)],'vol'=vols[(vols>=low.lim & vols<=high.lim & rgs>=rg.min)])
       final=spots[order(spots$vol),]
       return(final)
@@ -108,7 +99,12 @@ id.spots <- function(path.to.file,file.name,time.step,spot.box=6,spot.radius=6,s
     }
     spot.min=as.numeric(readline(prompt = 'New spot minimum signal (ENTER for default):  '))
     if (is.na(spot.min)==T){
-      spot.min=200
+      if (spot.picking=='composite'){
+        spot.min=500
+      }
+      if (spot.picking=='all.frames'){
+        spot.min=0
+      }
     }
     spot.max=as.numeric(readline(prompt = 'New spot maximum signal (ENTER for default):  '))
     if (is.na(spot.max)==T){
@@ -141,6 +137,8 @@ id.spots <- function(path.to.file,file.name,time.step,spot.box=6,spot.radius=6,s
   }
   row.names(particle.traces)=time.step*(1:frame.number)
   #
+  dev.print(pdf,paste0(path.to.file,'Identified_Spots.pdf'))
+  #
   utils::write.table(spots,file = paste0(path.to.file,'initial_particle_summary.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
   utils::write.table(particle.traces,file = paste0(path.to.file,'initial_particle_traces.txt'),quote = FALSE,sep = '\t',row.names = TRUE,col.names = FALSE)
   save(list = c('image.avg','spots','particle.traces','particle.snaps','time.step','frame.number','pixel.size','spot.radius'),file = paste0(path.to.file,'Initial-Particle_Data.RData'))
@@ -149,12 +147,17 @@ id.spots <- function(path.to.file,file.name,time.step,spot.box=6,spot.radius=6,s
 }
 
 refine.particles <- function(path.to.file,file.name='Initial-Particle_Data.RData',skip.manual='n',signal.step=NULL,auto.filter='none',classification.strategy='classic',background.subtraction='lower.quartile'){
+  lq.calc <- function(input){
+    input.2=na.omit(c(input))
+    result=(input.2[order(input.2)])[round(0.25*length(input.2))]
+    return(result)
+  }
   k.mode <- function(data){
     k=density(data)
     mode=k[['x']][which.max(k[['y']])]
     return(mode)
   }
-  classify.states <- function(data,signal.step=1000,fun='classic'){
+  classify.states <- function(data,signal.step,fun='classic',background=0){
     if (fun=='classic'){
       fit=smooth.spline((1:length(data))[is.na(data)==F],na.omit(data),spar = 0.5)
       d1=predict(object = fit,x = 1:length(data),deriv = 1)
@@ -166,7 +169,7 @@ refine.particles <- function(path.to.file,file.name='Initial-Particle_Data.RData
         pos.averages[swaps[i]:swaps[i+1]]=mean(na.omit(data[swaps[i]:swaps[i+1]]))
       }
       for (j in 0:50){
-        states[(pos.averages>=(signal.step*j-signal.step/2)) & (pos.averages<=(signal.step*j+signal.step/2))]=j
+        states[(pos.averages>=(signal.step*j-signal.step/2+background)) & (pos.averages<=(signal.step*j+signal.step/2+background))]=j
       }
       for (k in 0:50){
         state.averages[states==k]=mean(na.omit(data[states==k]))
@@ -252,13 +255,16 @@ refine.particles <- function(path.to.file,file.name='Initial-Particle_Data.RData
   #
   particle.trace.rolls=apply(particle.traces,MARGIN = c(2),FUN = data.table::frollmean,n=5,align='center')
   if (background.subtraction=='k.mode'){
-    particle.trace.rolls=particle.trace.rolls-k.mode(na.omit(particle.trace.rolls))
+    background=k.mode(na.omit(particle.trace.rolls))
+    particle.trace.rolls=particle.trace.rolls-background
   }
   if (background.subtraction=='basal.states'){
-    particle.trace.rolls=particle.trace.rolls-median(na.omit(apply(classify.states(particle.trace.rolls,fun = 'basic'),MARGIN = c(2),FUN = min)))
+    background=median(na.omit(apply(classify.states(particle.trace.rolls,fun = 'basic'),MARGIN = c(2),FUN = min)))
+    particle.trace.rolls=particle.trace.rolls-background
   }
   if (background.subtraction=='lower.quartile'){
-    particle.trace.rolls=particle.trace.rolls-(c(na.omit(classify.states(particle.trace.rolls,fun = 'basic')))[order(c(na.omit(classify.states(particle.trace.rolls,fun = 'basic'))))])[round(0.25*length(c(na.omit(classify.states(particle.trace.rolls,fun = 'basic')))))]
+    background=lq.calc(classify.states(particle.trace.rolls,fun = 'basic'))
+    particle.trace.rolls=particle.trace.rolls-background
   }
   particles.to.keep=rep(FALSE,times=nrow(spots))
   residence.times=c('Particle','Start','Stop','Residence','State Signal')
@@ -267,7 +273,7 @@ refine.particles <- function(path.to.file,file.name='Initial-Particle_Data.RData
   if (classification.strategy=='classic' | classification.strategy=='var.shift'){
     state.calls=matrix(NA,nrow = frame.number,ncol = nrow(spots))
     if (is.null(signal.step)==TRUE){
-      signal.step=2.5*sd(na.omit(particle.trace.rolls-classify.states(particle.trace.rolls,fun = 'basic')))
+      signal.step=3*sd(na.omit(particle.trace.rolls-classify.states(particle.trace.rolls,fun = 'basic')))
     }
   }
   if (classification.strategy=='uni.dbscan'){
