@@ -321,16 +321,18 @@ refine.particles <- function(path.to.file,file.name='Initial-Particle_Data.RData
       if (temp.2=='y'){
         particles.to.keep[i]=TRUE
         COUNTER=COUNTER+1
-        event.number=as.numeric(readline('How many binding events will you record for this particle?:  '))
-        event.times=matrix(0,nrow=event.number,ncol = 5); event.times[,1]=rep(COUNTER,times=event.number)
-        for (j in 1:event.number){
-          show('Please click on the starting point then stopping point of a binding event.')
-          event.times[j,2:3]=as.numeric(identify((1:frame.number)*time.step,particle.trace.rolls[,i],n=2)*time.step)
-          event.times[j,4]=diff(event.times[j,2:3])
-          event.times[j,5]=mean(na.omit(particle.trace.rolls[(event.times[j,2]/time.step):(event.times[j,3]/time.step),i]))
-          arrows(x0 = event.times[j,2],x1 = event.times[j,3],y0=mean(na.omit(particle.trace.rolls[(event.times[j,2]/time.step):(event.times[j,3]/time.step),i])),y1=mean(na.omit(particle.trace.rolls[(event.times[j,2]/time.step):(event.times[j,3]/time.step),i])),angle = 90,code = 3,col = 'red')
+        try(event.number=as.numeric(readline('How many binding events will you record for this particle?:  ')))
+        if (length(event.number)==1 & is.na(event.number)==FALSE){
+          event.times=matrix(0,nrow=event.number,ncol = 5); event.times[,1]=rep(COUNTER,times=event.number)
+          for (j in 1:event.number){
+            show('Please click on the starting point then stopping point of a binding event.')
+            event.times[j,2:3]=as.numeric(identify((1:frame.number)*time.step,particle.trace.rolls[,i],n=2)*time.step)
+            event.times[j,4]=diff(event.times[j,2:3])
+            event.times[j,5]=mean(na.omit(particle.trace.rolls[(event.times[j,2]/time.step):(event.times[j,3]/time.step),i]))
+            arrows(x0 = event.times[j,2],x1 = event.times[j,3],y0=mean(na.omit(particle.trace.rolls[(event.times[j,2]/time.step):(event.times[j,3]/time.step),i])),y1=mean(na.omit(particle.trace.rolls[(event.times[j,2]/time.step):(event.times[j,3]/time.step),i])),angle = 90,code = 3,col = 'red')
+          }
+          residence.times=rbind(residence.times,event.times)
         }
-        residence.times=rbind(residence.times,event.times)
         dev.print(pdf,paste0(path.to.file,'Particle_Trace_',COUNTER,'.pdf'))
       }
       if (temp.2=='quit'){

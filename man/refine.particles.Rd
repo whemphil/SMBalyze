@@ -9,8 +9,7 @@ refine.particles(path.to.file,file.name='Initial-Particle_Data.RData',skip.manua
 }
 \arguments{
 \item{path.to.file}{Path to the directory where the import file(s) are located. Write-out files will also be exported to this directory.}
-\item{file.name}{The name of the tiff file that contains the stacked images to be analyzed.}
-\item{time.step}{A single numerical value, representing the exposure time-step between images in the input file.}
+\item{file.name}{The name of the file that contains the selected particle traces to be analyzed. DEFAULT = 'Initial-Particle_Data.RData'}
 \item{skip.manual}{A single character string, either 'y' (yes) or 'n' (no), defining if manual particle selection should be skipped.  DEFAULT = 'n'.}
 \item{signal.step}{A single numerical value, representing the change in signal associated with a single binding event when the 'classification.strategy' argument is set to 'supervised'. DEFAULT = NULL, which approximates the parameter from signal variance in the data.}
 \item{auto.filter}{A single character string, defining which particle traces should be automatically filtered out if skip.manual='n'. Can be 'unbound', to filter out particle traces that remain in an unbound state the entire time, or 'all.stable', to filter out particle traces that remain in ANY single state the entire time. DEFAULT = 'none'.}
