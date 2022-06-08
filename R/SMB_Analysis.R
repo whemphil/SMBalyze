@@ -321,7 +321,7 @@ refine.particles <- function(path.to.file,file.name='Initial-Particle_Data.RData
       if (temp.2=='y'){
         particles.to.keep[i]=TRUE
         COUNTER=COUNTER+1
-        try(event.number=as.numeric(readline('How many binding events will you record for this particle?:  ')))
+        event.number=as.numeric(readline('How many binding events will you record for this particle?:  '))
         if (length(event.number)==1 & is.na(event.number)==FALSE){
           event.times=matrix(0,nrow=event.number,ncol = 5); event.times[,1]=rep(COUNTER,times=event.number)
           for (j in 1:event.number){
