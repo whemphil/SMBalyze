@@ -5,10 +5,10 @@
 Function to analyze binding states of particles from single molecule biophysics microscopy experiments.
 }
 \usage{
-refine.particles(path.to.file,file.name='Initial-Particle_Data.RData',skip.manual='n',signal.step=NULL,auto.filter='none',classification.strategy='classic',background.subtraction='lower.quartile')
+refine.particles(path.to.file='./',file.name='Initial-Particle_Data.RData',skip.manual='n',signal.step=NULL,auto.filter='none',classification.strategy='classic',background.subtraction='lower.quartile')
 }
 \arguments{
-\item{path.to.file}{Path to the directory where the import file(s) are located. Write-out files will also be exported to this directory.}
+\item{path.to.file}{Path to the directory where the import file(s) are located. Write-out files will also be exported to this directory. DEFAULT = (working directory)}
 \item{file.name}{The name of the file that contains the selected particle traces to be analyzed. DEFAULT = 'Initial-Particle_Data.RData'}
 \item{skip.manual}{A single character string, either 'y' (yes) or 'n' (no), defining if manual particle selection should be skipped.  DEFAULT = 'n'.}
 \item{signal.step}{A single numerical value, representing the change in signal associated with a single binding event when the 'classification.strategy' argument is set to 'supervised'. DEFAULT = NULL, which approximates the parameter from signal variance in the data.}

@@ -1,4 +1,4 @@
-id.spots <- function(path.to.file,file.name,time.step,spot.box=6,spot.radius=6,spot.min=NULL,spot.max=Inf,spot.picking='composite'){
+id.spots <- function(time.step,path.to.file='./',file.name='*.tif',spot.box=6,spot.radius=6,spot.min=NULL,spot.max=Inf,spot.picking='composite'){
   find.spots <- function(data,box.size,low.lim,high.lim,fill.radius,spot.picking){
     lq.calc <- function(input){
       input.2=na.omit(c(input))
@@ -146,7 +146,7 @@ id.spots <- function(path.to.file,file.name,time.step,spot.box=6,spot.radius=6,s
   return(id.spots.output.files)
 }
 
-refine.particles <- function(path.to.file,file.name='Initial-Particle_Data.RData',skip.manual='n',signal.step=NULL,auto.filter='none',classification.strategy='classic',background.subtraction='lower.quartile'){
+refine.particles <- function(path.to.file='./',file.name='Initial-Particle_Data.RData',skip.manual='n',signal.step=NULL,auto.filter='none',classification.strategy='classic',background.subtraction='lower.quartile'){
   lq.calc <- function(input){
     input.2=na.omit(c(input))
     result=(input.2[order(input.2)])[round(0.25*length(input.2))]
@@ -371,7 +371,7 @@ refine.particles <- function(path.to.file,file.name='Initial-Particle_Data.RData
   utils::write.table(residence.calls,file = paste0(path.to.file,'all-particle_residence-calls.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
 }
 
-calc.kn1 <- function(path.to.file,file.name='Refined-Particle_Data.RData',use.auto.times='n',min.residence=0,max.residence=Inf){
+calc.kn1 <- function(path.to.file='./',file.name='Refined-Particle_Data.RData',use.auto.times='n',min.residence=0,max.residence=Inf){
   load(file = paste0(path.to.file,file.name))
   #
   if (use.auto.times=='n'){

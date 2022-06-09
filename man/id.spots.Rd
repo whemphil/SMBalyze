@@ -5,12 +5,12 @@
 A function to identify particles of interest from the stacked tiff microscopy image file of a single-molecule biophysics experiment, and to export signal vs time data for those particles.
 }
 \usage{
-id.spots(path.to.file,file.name,time.step,spot.box=6,spot.radius=6,spot.min=NULL,spot.max=Inf,spot.picking='composite')
+id.spots(time.step,path.to.file='./',file.name='*.tif',spot.box=6,spot.radius=6,spot.min=NULL,spot.max=Inf,spot.picking='composite')
 }
 \arguments{
-\item{path.to.file}{Path to the directory where the import file(s) are located. Write-out files will also be exported to this directory.}
-\item{file.name}{The name of the tiff file that contains the stacked images to be analyzed.}
 \item{time.step}{A single numerical value, representing the exposure time-step between images in the input file.}
+\item{path.to.file}{Path to the directory where the import file(s) are located. Write-out files will also be exported to this directory. DEFAULT = (working directory)}
+\item{file.name}{The name of the tiff file that contains the stacked images to be analyzed. DEFAULT = (any tiff file)}
 \item{spot.box}{A single numerical value, representing the box radius used to scan for local maxima during particle identification.  DEFAULT = 6.}
 \item{spot.radius}{A single numerical value, representing the radius (number of pixels) around particles' maxima to be numerically integrated. DEFAULT = 6.}
 \item{spot.min}{A single numerical value, representing the minimum integration volume for identification as a particle. DEFAULT = 200 (spot.picking='comopsite') or 0 (spot.picking='all.frames').}
