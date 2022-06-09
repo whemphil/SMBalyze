@@ -5,7 +5,7 @@
 A function to identify particles of interest from the stacked tiff microscopy image file of a single-molecule biophysics experiment, and to export signal vs time data for those particles.
 }
 \usage{
-id.spots(time.step,path.to.file='./',file.name='*.tif',spot.box=6,spot.radius=6,spot.min=NULL,spot.max=Inf,spot.picking='composite')
+id.spots(time.step,path.to.file='./',file.name=NULL,spot.box=6,spot.radius=6,spot.min=NULL,spot.max=Inf,spot.picking='composite')
 }
 \arguments{
 \item{time.step}{A single numerical value, representing the exposure time-step between images in the input file.}

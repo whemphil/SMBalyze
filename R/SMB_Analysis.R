@@ -1,4 +1,4 @@
-id.spots <- function(time.step,path.to.file='./',file.name='*.tif',spot.box=6,spot.radius=6,spot.min=NULL,spot.max=Inf,spot.picking='composite'){
+id.spots <- function(time.step,path.to.file='./',file.name=NULL,spot.box=6,spot.radius=6,spot.min=NULL,spot.max=Inf,spot.picking='composite'){
   find.spots <- function(data,box.size,low.lim,high.lim,fill.radius,spot.picking){
     lq.calc <- function(input){
       input.2=na.omit(c(input))
@@ -69,6 +69,11 @@ id.spots <- function(time.step,path.to.file='./',file.name='*.tif',spot.box=6,sp
       return(final)
     }
   }
+  #
+  if (is.null(file.name)==TRUE){
+    file.name=list.files(path = path.to.file,pattern = '[.]tif')
+  }
+  #
   image.raw=suppressWarnings(tiff::readTIFF(paste0(path.to.file,file.name),all = TRUE,as.is=TRUE))
   pixel.size=dim(image.raw[[1]])
   frame.number=length(image.raw)
