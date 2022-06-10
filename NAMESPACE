@@ -1,5 +1,6 @@
 exportPattern("^[[:alpha:]]+")
 
+export(blind.input)
 export(id.spots)
 export(refine.particles)
 export(calc.kn1)

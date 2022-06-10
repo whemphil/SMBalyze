@@ -1,3 +1,18 @@
+blind.input <- function(path.to.files='./'){
+  files=list.files(path = path.to.files,pattern = '[.]tif')
+  visible.info=sub('_.*','',files)
+  blind.ids=sample(LETTERS[1:length(files)],length(files))
+  old.file.ids=files[order(blind.ids)]
+  new.file.ids=paste0(blind.ids[order(blind.ids)],'.tif')
+  file.visibles=visible.info[order(blind.ids)]
+  for (i in 1:length(files)){
+    dir.create(path = paste0(path.to.files,LETTERS[i]),recursive = TRUE)
+    file.copy(from = paste0(path.to.files,old.file.ids[i]),to = paste0(path.to.files,LETTERS[i],'/',new.file.ids[i]),overwrite = TRUE)
+  }
+  write.table(x=data.frame('new.file.ids'=new.file.ids,'old.file.ids'=old.file.ids),file = paste0(path.to.files,'file_key.txt'),quote = FALSE,col.names = TRUE,row.names = FALSE,sep = '\t')
+  write.table(x=data.frame('new.file.ids'=new.file.ids,'visible.info'=file.visibles),file = paste0(path.to.files,'file_visibles.txt'),quote = FALSE,col.names = TRUE,row.names = FALSE,sep = '\t')
+}
+
 id.spots <- function(time.step,path.to.file='./',file.name=NULL,spot.box=6,spot.radius=6,spot.min=NULL,spot.max=Inf,spot.picking='composite'){
   find.spots <- function(data,box.size,low.lim,high.lim,fill.radius,spot.picking){
     lq.calc <- function(input){
