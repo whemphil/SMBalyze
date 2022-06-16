@@ -349,7 +349,7 @@ refine.particles <- function(path.to.file='./',file.name='Initial-Particle_Data.
       par(fig=c(0,1,0,0.75),new = TRUE)
       plot((1:frame.number)*time.step,particle.trace.rolls[,i],type='l',main = 'Particle Trace',xlab='Time (s)',ylab = 'Signal')
       lines(((1:frame.number)*time.step)[is.na(states$avg)==F],states$avg[is.na(states$avg)==F],col='green',lwd=3)
-      temp.2=readline('Should this particle be used for analysis? (y/n/quit):  ')
+      temp.2=readline('Should this particle be used for analysis? (y/n/quit/finish):  ')
       if (temp.2=='y'){
         particles.to.keep[i]=TRUE
         COUNTER=COUNTER+1
@@ -374,10 +374,11 @@ refine.particles <- function(path.to.file='./',file.name='Initial-Particle_Data.
     if (skip.manual=='y' & i==1){
       temp.2='blank'
     }
-    if (i==nrow(spots)){
-      show(paste0('Particle refinement completed -- beginning data exports!'))
+    if (temp.2=='finish'){
+      break
     }
   }
+  show(paste0('Particle refinement completed -- beginning data exports!'))
   residence.calls=as.data.frame(as.matrix(residence.calls[2:nrow(residence.calls),])); for (k in 1:3){residence.calls[,k]=as.numeric(residence.calls[,k])}; colnames(residence.calls)=c('Particle','Bound','Residence')
   dwell.calls=as.data.frame(as.matrix(dwell.calls[2:nrow(dwell.calls),])); for (k in 1:3){dwell.calls[,k]=as.numeric(dwell.calls[,k])}; colnames(dwell.calls)=c('Particle','State','Dwell')
   if (skip.manual=='n'){
@@ -1222,7 +1223,7 @@ FRET.refine <- function(path.to.file='./',file.name='Initial-Particle_Data.RData
       par(fig=c(0.5,1,0,0.25),new = TRUE)
       plot((1:frame.number)*time.step,Cy3.trace.rolls[,i],type='l',main = 'Trace Overlay',xlab='Time (s)',ylab = 'Signal',col='green',ylim = range(na.omit(c(Cy3.trace.rolls[,i],Cy5.trace.rolls[,i]))))
       lines((1:frame.number)*time.step,Cy5.trace.rolls[,i],col='red')
-      check.2=readline('Should this particle be used for analysis? (y/n/quit):  ')
+      check.2=readline('Should this particle be used for analysis? (y/n/quit/finish):  ')
       if (check.2=='y'){
         particles.to.keep[i]=TRUE
         COUNTER=COUNTER+1
@@ -1243,10 +1244,11 @@ FRET.refine <- function(path.to.file='./',file.name='Initial-Particle_Data.RData
         stop('SCRIPT ABORTED BY USER')
       }
     }
-    if (i==nrow(ALLspots.Cy3axes)){
-      show(paste0('Particle refinement completed -- beginning data exports!'))
+    if (check.2=='finish'){
+      break
     }
   }
+  show(paste0('Particle refinement completed -- beginning data exports!'))
   residence.data=as.data.frame(as.matrix(residence.times[2:nrow(residence.times),])); for (k in 1:5){residence.data[,k]=as.numeric(residence.data[,k])}; colnames(residence.data)=c('Particle','Start','Stop','Residence')
   Cy3.residence.calls=as.data.frame(as.matrix(Cy3.residence.calls[2:nrow(Cy3.residence.calls),])); for (k in 1:3){Cy3.residence.calls[,k]=as.numeric(Cy3.residence.calls[,k])}; colnames(Cy3.residence.calls)=c('Particle','Bound','Residence')
   Cy3.dwell.calls=as.data.frame(as.matrix(Cy3.dwell.calls[2:nrow(Cy3.dwell.calls),])); for (k in 1:3){Cy3.dwell.calls[,k]=as.numeric(Cy3.dwell.calls[,k])}; colnames(Cy3.dwell.calls)=c('Particle','State','Dwell')
