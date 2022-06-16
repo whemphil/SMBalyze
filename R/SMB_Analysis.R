@@ -373,19 +373,23 @@ refine.particles <- function(path.to.file='./',file.name='Initial-Particle_Data.
   if (skip.manual=='n'){
     residence.data=as.data.frame(as.matrix(residence.times[2:nrow(residence.times),])); for (k in 1:5){residence.data[,k]=as.numeric(residence.data[,k])}; colnames(residence.data)=c('Particle','Start','Stop','Residence','State Signal')
     refined.particle.traces=particle.traces[,particles.to.keep]
-    refined.state.calls=state.calls[,particles.to.keep]
     refined.particle.trace.rolls=particle.trace.rolls[,particles.to.keep]
     refined.spots=spots[particles.to.keep,]
     refined.particle.snaps=particle.snaps[,,,particles.to.keep]
+    refined.state.calls=state.calls[,particles.to.keep]
+    refined.residence.calls=residence.calls[which(residence.calls[,1]%in%which(particles.to.keep)),]
+    refined.dwell.calls=dwell.calls[which(dwell.calls[,1]%in%which(particles.to.keep)),]
   }
   #
   if (skip.manual=='n'){
-    save(list = c('image.avg','residence.data','refined.particle.traces','refined.particle.trace.rolls','refined.spots','refined.particle.snaps','state.calls','residence.calls','dwell.calls'),file = paste0(path.to.file,'Refined-Particle_Data.RData'))
+    save(list = c('image.avg','residence.data','refined.particle.traces','refined.particle.trace.rolls','refined.spots','refined.particle.snaps','state.calls','residence.calls','dwell.calls','refined.state.calls','refined.residence.calls','refined.dwell.calls'),file = paste0(path.to.file,'Refined-Particle_Data.RData'))
     utils::write.table(residence.data,file = paste0(path.to.file,'residence_data.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
     utils::write.table(refined.particle.traces,file = paste0(path.to.file,'selected_particle_traces.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
-    utils::write.table(refined.state.calls,file = paste0(path.to.file,'selected_particle_state-calls.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
     utils::write.table(refined.particle.trace.rolls,file = paste0(path.to.file,'selected_particle_smoothed-traces.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
     utils::write.table(refined.spots,file = paste0(path.to.file,'selected_particle_summary.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
+    utils::write.table(refined.state.calls,file = paste0(path.to.file,'selected_particle_state-calls.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
+    utils::write.table(refined.residence.calls,file = paste0(path.to.file,'selected_particle_residence-calls.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
+    utils::write.table(refined.dwell.calls,file = paste0(path.to.file,'selected_particle_dwell-calls.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
     return(list('image.avg'=image.avg,'residence.data'=residence.data,'refined.particle.traces'=refined.particle.traces,'refined.particle.trace.rolls'=refined.particle.trace.rolls,'refined.spots'=refined.spots,'refined.particle.snaps'=refined.particle.snaps,'state.calls'=state.calls,'residence.calls'=residence.calls,'dwell.calls'=dwell.calls))
   }
   if (skip.manual=='y'){
@@ -404,7 +408,7 @@ calc.kn1 <- function(path.to.file='./',file.name='Refined-Particle_Data.RData',u
     residence.times=residence.data$Residence
   }
   if (use.auto.times=='y'){
-    residence.times=na.omit(residence.calls$Residence[residence.calls$Bound==T])
+    residence.times=na.omit(refined.residence.calls$Residence[refined.residence.calls$Bound==T])
   }
   #
   residence.time.values=residence.times[((residence.times>=min.residence) & (residence.times<=max.residence))]
@@ -1231,11 +1235,15 @@ FRET.refine <- function(path.to.file='./',file.name='Initial-Particle_Data.RData
   Cy3.dwell.calls=as.data.frame(as.matrix(Cy3.dwell.calls[2:nrow(Cy3.dwell.calls),])); for (k in 1:3){Cy3.dwell.calls[,k]=as.numeric(Cy3.dwell.calls[,k])}; colnames(Cy3.dwell.calls)=c('Particle','State','Dwell')
   refined.Cy3.traces=Cy3.traces[,particles.to.keep]
   refined.Cy3.state.calls=Cy3.state.calls[,particles.to.keep]
+  refined.Cy3.residence.calls=Cy3.residence.calls[which(Cy3.residence.calls[,1]%in%which(particles.to.keep)),]
+  refined.Cy3.dwell.calls=Cy3.dwell.calls[which(Cy3.dwell.calls[,1]%in%which(particles.to.keep)),]
   refined.Cy3.trace.rolls=Cy3.trace.rolls[,particles.to.keep]
   Cy5.residence.calls=as.data.frame(as.matrix(Cy5.residence.calls[2:nrow(Cy5.residence.calls),])); for (k in 1:3){Cy5.residence.calls[,k]=as.numeric(Cy5.residence.calls[,k])}; colnames(Cy5.residence.calls)=c('Particle','Bound','Residence')
   Cy5.dwell.calls=as.data.frame(as.matrix(Cy5.dwell.calls[2:nrow(Cy5.dwell.calls),])); for (k in 1:3){Cy5.dwell.calls[,k]=as.numeric(Cy5.dwell.calls[,k])}; colnames(Cy5.dwell.calls)=c('Particle','State','Dwell')
   refined.Cy5.traces=Cy5.traces[,particles.to.keep]
   refined.Cy5.state.calls=Cy5.state.calls[,particles.to.keep]
+  refined.Cy5.residence.calls=Cy5.residence.calls[which(Cy5.residence.calls[,1]%in%which(particles.to.keep)),]
+  refined.Cy5.dwell.calls=Cy5.dwell.calls[which(Cy5.dwell.calls[,1]%in%which(particles.to.keep)),]
   refined.Cy5.trace.rolls=Cy5.trace.rolls[,particles.to.keep]
   REFspots.Cy3axes=ALLspots.Cy3axes[particles.to.keep,]
   refined.Cy3.snaps=Cy3.snaps[,,,particles.to.keep]
@@ -1258,6 +1266,10 @@ FRET.refine <- function(path.to.file='./',file.name='Initial-Particle_Data.RData
   utils::write.table(Cy5.residence.calls,file = paste0(path.to.file,'all-particle_Cy5-residence-calls.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
   utils::write.table(refined.Cy3.state.calls,file = paste0(path.to.file,'selected_Cy3-state-calls.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
   utils::write.table(refined.Cy5.state.calls,file = paste0(path.to.file,'selected_Cy5-state-calls.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
+  utils::write.table(refined.Cy3.residence.calls,file = paste0(path.to.file,'selected_Cy3-residence-calls.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
+  utils::write.table(refined.Cy5.residence.calls,file = paste0(path.to.file,'selected_Cy5-residence-calls.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
+  utils::write.table(refined.Cy3.dwell.calls,file = paste0(path.to.file,'selected_Cy3-dwell-calls.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
+  utils::write.table(refined.Cy5.dwell.calls,file = paste0(path.to.file,'selected_Cy5-dwell-calls.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
   return(list('residence.data'=residence.data,'Cy3.image.avg'=Cy3.image.avg,'refined.Cy3.traces'=refined.Cy3.traces,'refined.Cy3.trace.rolls'=refined.Cy3.trace.rolls,'REFspots.Cy3axes'=REFspots.Cy3axes,'refined.Cy3.snaps'=refined.Cy3.snaps,'Cy3.state.calls'=Cy3.state.calls,'Cy3.residence.calls'=Cy3.residence.calls,'Cy3.dwell.calls'=Cy3.dwell.calls,'Cy5.image.avg'=Cy5.image.avg,'refined.Cy5.traces'=refined.Cy5.traces,'refined.Cy5.trace.rolls'=refined.Cy5.trace.rolls,'REFspots.Cy5axes'=REFspots.Cy5axes,'refined.Cy5.snaps'=refined.Cy5.snaps,'Cy5.state.calls'=Cy5.state.calls,'Cy5.residence.calls'=Cy5.residence.calls,'Cy5.dwell.calls'=Cy5.dwell.calls))
 }
 
