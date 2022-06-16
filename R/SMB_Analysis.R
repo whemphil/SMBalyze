@@ -350,8 +350,8 @@ refine.particles <- function(path.to.file='./',file.name='Initial-Particle_Data.
         if (length(event.number)==1 & is.na(event.number)==FALSE & event.number>0){
           event.times=matrix(0,nrow=event.number,ncol = 5); event.times[,1]=rep(COUNTER,times=event.number)
           for (j in 1:event.number){
-            show('Please click on the starting point then stopping point of a binding event (bottom graph -- x-axis).')
-            event.times[j,2:3]=as.numeric(identify((1:frame.number)*time.step,rep(min(na.omit(particle.trace.rolls[,i])),times=frame.number),n=2)*time.step)
+            show('Please click on the starting point then stopping point of a binding event (bottom graph -- green fit line).')
+            event.times[j,2:3]=as.numeric(identify(((1:frame.number)*time.step)[is.na(states$avg)==F],states$avg[is.na(states$avg)==F],n=2)*time.step)
             event.times[j,4]=diff(event.times[j,2:3])
             event.times[j,5]=mean(na.omit(particle.trace.rolls[(event.times[j,2]/time.step):(event.times[j,3]/time.step),i]))
             arrows(x0 = event.times[j,2],x1 = event.times[j,3],y0=mean(na.omit(particle.trace.rolls[(event.times[j,2]/time.step):(event.times[j,3]/time.step),i])),y1=mean(na.omit(particle.trace.rolls[(event.times[j,2]/time.step):(event.times[j,3]/time.step),i])),angle = 90,code = 3,col = 'red')
