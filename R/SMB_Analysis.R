@@ -927,7 +927,7 @@ FRET.id <- function(time.step,path.to.file='./',Cy3.file.name=NULL,Cy5.file.name
     if (check.2!='n' & check.2!='y' & check.2!='quit'){stop('INVALID RESPONSE')}
   }
   #
-  delta=(0:10)
+  delta=(0:20)
   Cy3.pairs=matrix(0,nrow=nrow(Cy3spots.Cy3axes),ncol = length(delta))
   Cy5.pairs=matrix(0,nrow=nrow(Cy5spots.Cy3axes),ncol = length(delta))
   for (i in 1:length(delta)){
