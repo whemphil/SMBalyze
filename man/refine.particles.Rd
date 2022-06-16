@@ -24,6 +24,7 @@ Files:
 \item{Refined-Particle_Data.RData}{An RData file containing all necessary results and input for subsequent functions.}
 \item{residence_data.txt}{A table describing manually identified binding states for selected particles, including columns for particle id, start time, end time, residence time, and signal average for each state.}
 \item{selected_particle_traces.txt}{A table containing signal vs time data for each selected particle.}
+\item{selected_particle_state-calls.txt}{A table containing automatically called state vs time information for each selected particle.}
 \item{selected_particle_smoothed-traces.txt}{A table containing smoothed signal vs time data for each selected particle.}
 \item{selected_particle_summary.txt}{A table containing indices and volume information for all selected particle composites.}
 \item{all-particle_state-calls.txt}{A table containing automatically called state vs time information for all initially identified particles.}

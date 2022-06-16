@@ -347,11 +347,11 @@ refine.particles <- function(path.to.file='./',file.name='Initial-Particle_Data.
         particles.to.keep[i]=TRUE
         COUNTER=COUNTER+1
         event.number=as.numeric(readline('How many binding events will you record for this particle?:  '))
-        if (length(event.number)==1 & is.na(event.number)==FALSE){
+        if (length(event.number)==1 & is.na(event.number)==FALSE & event.number>0){
           event.times=matrix(0,nrow=event.number,ncol = 5); event.times[,1]=rep(COUNTER,times=event.number)
           for (j in 1:event.number){
-            show('Please click on the starting point then stopping point of a binding event.')
-            event.times[j,2:3]=as.numeric(identify((1:frame.number)*time.step,particle.trace.rolls[,i],n=2)*time.step)
+            show('Please click on the starting point then stopping point of a binding event (bottom graph -- x-axis).')
+            event.times[j,2:3]=as.numeric(identify((1:frame.number)*time.step,rep(min(na.omit(particle.trace.rolls[,i])),times=frame.number),n=2)*time.step)
             event.times[j,4]=diff(event.times[j,2:3])
             event.times[j,5]=mean(na.omit(particle.trace.rolls[(event.times[j,2]/time.step):(event.times[j,3]/time.step),i]))
             arrows(x0 = event.times[j,2],x1 = event.times[j,3],y0=mean(na.omit(particle.trace.rolls[(event.times[j,2]/time.step):(event.times[j,3]/time.step),i])),y1=mean(na.omit(particle.trace.rolls[(event.times[j,2]/time.step):(event.times[j,3]/time.step),i])),angle = 90,code = 3,col = 'red')
@@ -383,6 +383,7 @@ refine.particles <- function(path.to.file='./',file.name='Initial-Particle_Data.
     save(list = c('image.avg','residence.data','refined.particle.traces','refined.particle.trace.rolls','refined.spots','refined.particle.snaps','state.calls','residence.calls','dwell.calls'),file = paste0(path.to.file,'Refined-Particle_Data.RData'))
     utils::write.table(residence.data,file = paste0(path.to.file,'residence_data.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
     utils::write.table(refined.particle.traces,file = paste0(path.to.file,'selected_particle_traces.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
+    utils::write.table(refined.state.calls,file = paste0(path.to.file,'selected_particle_state-calls.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
     utils::write.table(refined.particle.trace.rolls,file = paste0(path.to.file,'selected_particle_smoothed-traces.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
     utils::write.table(refined.spots,file = paste0(path.to.file,'selected_particle_summary.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
     return(list('image.avg'=image.avg,'residence.data'=residence.data,'refined.particle.traces'=refined.particle.traces,'refined.particle.trace.rolls'=refined.particle.trace.rolls,'refined.spots'=refined.spots,'refined.particle.snaps'=refined.particle.snaps,'state.calls'=state.calls,'residence.calls'=residence.calls,'dwell.calls'=dwell.calls))
@@ -1208,7 +1209,7 @@ FRET.refine <- function(path.to.file='./',file.name='Initial-Particle_Data.RData
         if (length(event.number)==1 & is.na(event.number)==FALSE){
           event.times=matrix(0,nrow=event.number,ncol = 4); event.times[,1]=rep(COUNTER,times=event.number)
           for (j in 1:event.number){
-            show('Please click on the starting point then stopping point of a binding event (Trace Overlay).')
+            show('Please click on the starting point then stopping point of a binding event (Trace Overlay -- x-axis).')
             event.times[j,2:3]=as.numeric(identify((1:frame.number)*time.step,rep(0,times=frame.number),n=2,plot = FALSE)*time.step)
             event.times[j,4]=diff(event.times[j,2:3])
             arrows(x0 = event.times[j,2],x1 = event.times[j,3],y0=max(na.omit(c(Cy3.trace.rolls[,i],Cy5.trace.rolls[,i]))),y1=max(na.omit(c(Cy3.trace.rolls[,i],Cy5.trace.rolls[,i]))),angle = 90,code = 3,col = 'black')
@@ -1220,6 +1221,9 @@ FRET.refine <- function(path.to.file='./',file.name='Initial-Particle_Data.RData
       if (check.2=='quit'){
         stop('SCRIPT ABORTED BY USER')
       }
+    }
+    if (i==nrow(ALLspots.Cy3axes)){
+      show(paste0('Particle refinement completed -- beginning data exports!'))
     }
   }
   residence.data=as.data.frame(as.matrix(residence.times[2:nrow(residence.times),])); for (k in 1:5){residence.data[,k]=as.numeric(residence.data[,k])}; colnames(residence.data)=c('Particle','Start','Stop','Residence')
@@ -1252,6 +1256,8 @@ FRET.refine <- function(path.to.file='./',file.name='Initial-Particle_Data.RData
   utils::write.table(Cy5.state.calls,file = paste0(path.to.file,'all-particle_Cy5-state-calls.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
   utils::write.table(Cy5.dwell.calls,file = paste0(path.to.file,'all-particle_Cy5-dwell-calls.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
   utils::write.table(Cy5.residence.calls,file = paste0(path.to.file,'all-particle_Cy5-residence-calls.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
+  utils::write.table(refined.Cy3.state.calls,file = paste0(path.to.file,'selected_Cy3-state-calls.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
+  utils::write.table(refined.Cy5.state.calls,file = paste0(path.to.file,'selected_Cy5-state-calls.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
   return(list('residence.data'=residence.data,'Cy3.image.avg'=Cy3.image.avg,'refined.Cy3.traces'=refined.Cy3.traces,'refined.Cy3.trace.rolls'=refined.Cy3.trace.rolls,'REFspots.Cy3axes'=REFspots.Cy3axes,'refined.Cy3.snaps'=refined.Cy3.snaps,'Cy3.state.calls'=Cy3.state.calls,'Cy3.residence.calls'=Cy3.residence.calls,'Cy3.dwell.calls'=Cy3.dwell.calls,'Cy5.image.avg'=Cy5.image.avg,'refined.Cy5.traces'=refined.Cy5.traces,'refined.Cy5.trace.rolls'=refined.Cy5.trace.rolls,'REFspots.Cy5axes'=REFspots.Cy5axes,'refined.Cy5.snaps'=refined.Cy5.snaps,'Cy5.state.calls'=Cy5.state.calls,'Cy5.residence.calls'=Cy5.residence.calls,'Cy5.dwell.calls'=Cy5.dwell.calls))
 }
 

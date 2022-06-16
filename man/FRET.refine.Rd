@@ -34,4 +34,6 @@ Files:
 \item{all-particle_Cy5-state-calls.txt}{A table containing automatically called state vs time information from the Cy5-camera images for all initially identified particles.}
 \item{all-particle_Cy5-dwell-calls.txt}{A table containing the automatically called sequential multi-binding states and residence times from the Cy5-camera images for each initially identified particle.}
 \item{all-particle_Cy5-residence-calls.txt}{A table containing the automatically called sequential binary binding states and residence times from the Cy5-camera images for each initially identified particle.}
+\item{selected_Cy3-state-calls.txt}{A table containing automatically called Cy3-camera images' state vs time information for each selected particle.}
+\item{selected_Cy5-state-calls.txt}{A table containing automatically called Cy5-camera images' state vs time information for each selected particle.}
 }
