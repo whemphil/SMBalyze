@@ -172,6 +172,13 @@ id.spots <- function(time.step,path.to.file='./',file.name=NULL,spot.box=6,spot.
 }
 
 refine.particles <- function(path.to.file='./',file.name='Initial-Particle_Data.RData',skip.manual='n',signal.step=NULL,auto.filter='none',classification.strategy='classic',background.subtraction='lower.quartile'){
+  count.condense <- function(input){
+    new.count=input
+    for (i in 1:length(input)){
+      new.count[i]=length(unique(input[1:i]))
+    }
+    return(new.count)
+  }
   lq.calc <- function(input){
     input.2=na.omit(c(input))
     result=(input.2[order(input.2)])[round(0.25*length(input.2))]
@@ -380,8 +387,8 @@ refine.particles <- function(path.to.file='./',file.name='Initial-Particle_Data.
     refined.spots=spots[particles.to.keep,]
     refined.particle.snaps=particle.snaps[,,,particles.to.keep]
     refined.state.calls=state.calls[,particles.to.keep]
-    refined.residence.calls=residence.calls[which(residence.calls[,1]%in%which(particles.to.keep)),]
-    refined.dwell.calls=dwell.calls[which(dwell.calls[,1]%in%which(particles.to.keep)),]
+    refined.residence.calls=residence.calls[which(residence.calls[,1]%in%which(particles.to.keep)),]; refined.residence.calls[,1]=count.condense(refined.residence.calls[,1])
+    refined.dwell.calls=dwell.calls[which(dwell.calls[,1]%in%which(particles.to.keep)),]; refined.dwell.calls[,1]=count.condense(refined.dwell.calls[,1])
   }
   #
   if (skip.manual=='n'){
@@ -997,6 +1004,13 @@ FRET.id <- function(time.step,path.to.file='./',Cy3.file.name=NULL,Cy5.file.name
 }
 
 FRET.refine <- function(path.to.file='./',file.name='Initial-Particle_Data.RData',auto.filter='none',spot.types='all',classification.strategy='classic',background.subtraction='lower.quartile'){
+  count.condense <- function(input){
+    new.count=input
+    for (i in 1:length(input)){
+      new.count[i]=length(unique(input[1:i]))
+    }
+    return(new.count)
+  }
   woh.scale <- function(data){
     a=c(data)
     b=(data-min(a))/diff(range(a))
@@ -1238,15 +1252,15 @@ FRET.refine <- function(path.to.file='./',file.name='Initial-Particle_Data.RData
   Cy3.dwell.calls=as.data.frame(as.matrix(Cy3.dwell.calls[2:nrow(Cy3.dwell.calls),])); for (k in 1:3){Cy3.dwell.calls[,k]=as.numeric(Cy3.dwell.calls[,k])}; colnames(Cy3.dwell.calls)=c('Particle','State','Dwell')
   refined.Cy3.traces=Cy3.traces[,particles.to.keep]
   refined.Cy3.state.calls=Cy3.state.calls[,particles.to.keep]
-  refined.Cy3.residence.calls=Cy3.residence.calls[which(Cy3.residence.calls[,1]%in%which(particles.to.keep)),]
-  refined.Cy3.dwell.calls=Cy3.dwell.calls[which(Cy3.dwell.calls[,1]%in%which(particles.to.keep)),]
+  refined.Cy3.residence.calls=Cy3.residence.calls[which(Cy3.residence.calls[,1]%in%which(particles.to.keep)),]; refined.Cy3.residence.calls[,1]=count.condense(refined.Cy3.residence.calls[,1])
+  refined.Cy3.dwell.calls=Cy3.dwell.calls[which(Cy3.dwell.calls[,1]%in%which(particles.to.keep)),]; refined.Cy3.dwell.calls[,1]=count.condense(refined.Cy3.dwell.calls[,1])
   refined.Cy3.trace.rolls=Cy3.trace.rolls[,particles.to.keep]
   Cy5.residence.calls=as.data.frame(as.matrix(Cy5.residence.calls[2:nrow(Cy5.residence.calls),])); for (k in 1:3){Cy5.residence.calls[,k]=as.numeric(Cy5.residence.calls[,k])}; colnames(Cy5.residence.calls)=c('Particle','Bound','Residence')
   Cy5.dwell.calls=as.data.frame(as.matrix(Cy5.dwell.calls[2:nrow(Cy5.dwell.calls),])); for (k in 1:3){Cy5.dwell.calls[,k]=as.numeric(Cy5.dwell.calls[,k])}; colnames(Cy5.dwell.calls)=c('Particle','State','Dwell')
   refined.Cy5.traces=Cy5.traces[,particles.to.keep]
   refined.Cy5.state.calls=Cy5.state.calls[,particles.to.keep]
-  refined.Cy5.residence.calls=Cy5.residence.calls[which(Cy5.residence.calls[,1]%in%which(particles.to.keep)),]
-  refined.Cy5.dwell.calls=Cy5.dwell.calls[which(Cy5.dwell.calls[,1]%in%which(particles.to.keep)),]
+  refined.Cy5.residence.calls=Cy5.residence.calls[which(Cy5.residence.calls[,1]%in%which(particles.to.keep)),]; refined.Cy5.residence.calls[,1]=count.condense(refined.Cy5.residence.calls[,1])
+  refined.Cy5.dwell.calls=Cy5.dwell.calls[which(Cy5.dwell.calls[,1]%in%which(particles.to.keep)),]; refined.Cy5.dwell.calls[,1]=count.condense(refined.Cy5.dwell.calls[,1])
   refined.Cy5.trace.rolls=Cy5.trace.rolls[,particles.to.keep]
   REFspots.Cy3axes=ALLspots.Cy3axes[particles.to.keep,]
   refined.Cy3.snaps=Cy3.snaps[,,,particles.to.keep]
