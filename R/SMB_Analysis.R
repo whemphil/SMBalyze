@@ -382,7 +382,11 @@ refine.particles <- function(path.to.file='./',file.name='Initial-Particle_Data.
   residence.calls=as.data.frame(as.matrix(residence.calls[2:nrow(residence.calls),])); for (k in 1:3){residence.calls[,k]=as.numeric(residence.calls[,k])}; colnames(residence.calls)=c('Particle','Bound','Residence')
   dwell.calls=as.data.frame(as.matrix(dwell.calls[2:nrow(dwell.calls),])); for (k in 1:3){dwell.calls[,k]=as.numeric(dwell.calls[,k])}; colnames(dwell.calls)=c('Particle','State','Dwell')
   if (skip.manual=='n'){
-    residence.data=as.data.frame(as.matrix(residence.times[2:nrow(residence.times),])); for (k in 1:5){residence.data[,k]=as.numeric(residence.data[,k])}; colnames(residence.data)=c('Particle','Start','Stop','Residence','State Signal')
+    if (length(dim(residence.times))==2){
+      residence.data=as.data.frame(as.matrix(residence.times[2:nrow(residence.times),])); for (k in 1:4){residence.data[,k]=as.numeric(residence.data[,k])}; colnames(residence.data)=c('Particle','Start','Stop','Residence')
+    } else {
+      residence.data=c('Particle','Start','Stop','Residence')
+    }
     refined.particle.traces=particle.traces[,particles.to.keep]
     refined.particle.trace.rolls=particle.trace.rolls[,particles.to.keep]
     refined.spots=spots[particles.to.keep,]
@@ -1249,7 +1253,11 @@ FRET.refine <- function(path.to.file='./',file.name='Initial-Particle_Data.RData
     }
   }
   show(paste0('Particle refinement completed -- beginning data exports!'))
-  residence.data=as.data.frame(as.matrix(residence.times[2:nrow(residence.times),])); for (k in 1:5){residence.data[,k]=as.numeric(residence.data[,k])}; colnames(residence.data)=c('Particle','Start','Stop','Residence')
+  if (length(dim(residence.times))==2){
+    residence.data=as.data.frame(as.matrix(residence.times[2:nrow(residence.times),])); for (k in 1:4){residence.data[,k]=as.numeric(residence.data[,k])}; colnames(residence.data)=c('Particle','Start','Stop','Residence')
+  } else {
+    residence.data=c('Particle','Start','Stop','Residence')
+  }
   Cy3.residence.calls=as.data.frame(as.matrix(Cy3.residence.calls[2:nrow(Cy3.residence.calls),])); for (k in 1:3){Cy3.residence.calls[,k]=as.numeric(Cy3.residence.calls[,k])}; colnames(Cy3.residence.calls)=c('Particle','Bound','Residence')
   Cy3.dwell.calls=as.data.frame(as.matrix(Cy3.dwell.calls[2:nrow(Cy3.dwell.calls),])); for (k in 1:3){Cy3.dwell.calls[,k]=as.numeric(Cy3.dwell.calls[,k])}; colnames(Cy3.dwell.calls)=c('Particle','State','Dwell')
   refined.Cy3.traces=Cy3.traces[,particles.to.keep]
