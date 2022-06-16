@@ -367,6 +367,9 @@ refine.particles <- function(path.to.file='./',file.name='Initial-Particle_Data.
     if (skip.manual=='y' & i==1){
       temp.2='blank'
     }
+    if (i==nrow(spots)){
+      show(paste0('Particle refinement completed -- beginning data exports!'))
+    }
   }
   residence.calls=as.data.frame(as.matrix(residence.calls[2:nrow(residence.calls),])); for (k in 1:3){residence.calls[,k]=as.numeric(residence.calls[,k])}; colnames(residence.calls)=c('Particle','Bound','Residence')
   dwell.calls=as.data.frame(as.matrix(dwell.calls[2:nrow(dwell.calls),])); for (k in 1:3){dwell.calls[,k]=as.numeric(dwell.calls[,k])}; colnames(dwell.calls)=c('Particle','State','Dwell')
