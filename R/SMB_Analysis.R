@@ -584,6 +584,8 @@ FRET.align <- function(path.to.file='./',file.name=NULL,alignment=list('r'=0.97,
   #
   if (is.null(file.name)==TRUE){
     file.name=list.files(path = path.to.file,pattern = '[.]tif')
+    show(paste0('Cy3 Filename = ',file.name[1]))
+    show(paste0('Cy5 Filename = ',file.name[2]))
   }
   image.raw.Cy3=suppressWarnings(tiff::readTIFF(paste0(path.to.file,file.name[1]),all = TRUE,as.is=TRUE))
   frame.number.Cy3=length(image.raw.Cy3)
