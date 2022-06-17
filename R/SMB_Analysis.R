@@ -969,7 +969,7 @@ FRET.id <- function(time.step,path.to.file='./',Cy3.file.name=NULL,Cy5.file.name
   }
   rm(COUNTER)
   #
-  delta.info=data.frame('delta'=delta,'Cy3.Spots'=colSums(Cy3.pairs==0),'Cy5.Spots'=colSums(Cy5.pairs==0),'DUAL.Spots'=colSums(Cy5.pairs!=0))
+  delta.info=data.frame('delta'=delta,'Cy3.Spots'=colSums(Cy3.pairs==0),'Cy5.Spots'=colSums(Cy5.pairs==0),'DUAL.Spots'=colSums(Cy5.pairs!=0),'QC.Check'=((colSums(Cy3.pairs==0)[1]-colSums(Cy3.pairs==0))==colSums(Cy5.pairs!=0) & (colSums(Cy5.pairs==0)[1]-colSums(Cy5.pairs==0))==colSums(Cy5.pairs!=0)))
   show(delta.info)
   check.3='n'; while (check.3=='n'){
     input.1=as.numeric(readline(prompt = 'Which delta value would you like to proceed with? (0-10,quit):  '))
