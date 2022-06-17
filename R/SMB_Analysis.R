@@ -479,7 +479,7 @@ FRET.align <- function(path.to.file='./',file.name=NULL,alignment=list('r'=0.97,
     data.adj=data.frame('r'=data$r*r.factor,'theta'=data$theta+theta.factor)
     return(data.adj)
   }
-  get.msd <- function(par,Cy5.spots,Cy3.scale){
+  get.msd <- function(par,Cy5.spots,Cy3.scale,Cy5.scale){
     cart2pol <- function(data,centroid){
       data.pol=data.frame('r'=sqrt((data$x-centroid[1])^2+(data$y-centroid[2])^2),'theta'=atan2((data$y-centroid[2]),(data$x-centroid[1]))*180/pi)
       return(data.pol)
@@ -512,7 +512,8 @@ FRET.align <- function(path.to.file='./',file.name=NULL,alignment=list('r'=0.97,
     Cy3.projections=cart2mat(pol2cart(pol.adjust(cart2pol(Cy5.spots[,1:2],centroid),r.factor,theta.factor),centroid),row.num)
     Cy3.projections.filtered=Cy3.projections[(Cy3.projections$row<=dim(Cy3.scale)[1] & Cy3.projections$col<=dim(Cy3.scale)[2]),]
     Cy3.projection.signals=apply(X = Cy3.projections.filtered,MARGIN = 1,FUN = mat.id.grab,data=Cy3.scale)
-    Cy5.signals.filtered=Cy5.spots[(Cy3.projections$row<=dim(Cy3.scale)[1] & Cy3.projections$col<=dim(Cy3.scale)[2]),5]
+    Cy5.spots.filtered=Cy5.spots[(Cy3.projections$row<=dim(Cy3.scale)[1] & Cy3.projections$col<=dim(Cy3.scale)[2]),3:4]
+    Cy5.signals.filtered=apply(X = Cy5.spots.filtered,MARGIN = 1,FUN = mat.id.grab,data=Cy5.scale)
     msd=mean((Cy3.projection.signals-Cy5.signals.filtered)^2)
     return(msd)
   }
@@ -521,8 +522,8 @@ FRET.align <- function(path.to.file='./',file.name=NULL,alignment=list('r'=0.97,
     b=(data-min(a))/diff(range(a))
     return(b)
   }
-  auto.align <- function(Cy5.spots,Cy3.scale,pars){
-    get.msd <- function(par,Cy5.spots,Cy3.scale){
+  auto.align <- function(Cy5.spots,Cy3.scale,Cy5.scale,pars){
+    get.msd <- function(par,Cy5.spots,Cy3.scale,Cy5.scale){
       cart2pol <- function(data,centroid){
         data.pol=data.frame('r'=sqrt((data$x-centroid[1])^2+(data$y-centroid[2])^2),'theta'=atan2((data$y-centroid[2]),(data$x-centroid[1]))*180/pi)
         return(data.pol)
@@ -555,11 +556,12 @@ FRET.align <- function(path.to.file='./',file.name=NULL,alignment=list('r'=0.97,
       Cy3.projections=cart2mat(pol2cart(pol.adjust(cart2pol(Cy5.spots[,1:2],centroid),r.factor,theta.factor),centroid),row.num)
       Cy3.projections.filtered=Cy3.projections[(Cy3.projections$row<=dim(Cy3.scale)[1] & Cy3.projections$col<=dim(Cy3.scale)[2]),]
       Cy3.projection.signals=apply(X = Cy3.projections.filtered,MARGIN = 1,FUN = mat.id.grab,data=Cy3.scale)
-      Cy5.signals.filtered=Cy5.spots[(Cy3.projections$row<=dim(Cy3.scale)[1] & Cy3.projections$col<=dim(Cy3.scale)[2]),5]
+      Cy5.spots.filtered=Cy5.spots[(Cy3.projections$row<=dim(Cy3.scale)[1] & Cy3.projections$col<=dim(Cy3.scale)[2]),3:4]
+      Cy5.signals.filtered=apply(X = Cy5.spots.filtered,MARGIN = 1,FUN = mat.id.grab,data=Cy5.scale)
       msd=mean((Cy3.projection.signals-Cy5.signals.filtered)^2)
       return(msd)
     }
-    model.fit=optim(par = c(pars[['r']],pars[['theta']]),fn = get.msd,method = "L-BFGS-B",lower = c(0.8,-45),upper = c(1.09,45),Cy5.spots = Cy5.spots,Cy3.scale = Cy3.scale,control = list('ndeps'=c(0.01,0.5)))
+    model.fit=optim(par = c(pars[['r']],pars[['theta']]),fn = get.msd,method = "L-BFGS-B",lower = c(0.8,-45),upper = c(1.09,45),Cy5.spots = Cy5.spots,Cy3.scale = Cy3.scale,Cy5.scale = Cy5.scale,control = list('ndeps'=c(0.01,0.5)))
     fit.parameters=list('r'=model.fit[['par']][1],'theta'=model.fit[['par']][2])
     return(fit.parameters)
   }
@@ -664,7 +666,7 @@ FRET.align <- function(path.to.file='./',file.name=NULL,alignment=list('r'=0.97,
   Cy3.spots.matched=find.spots(Cy3.scale,search.radius,spot.min,spot.max,integration.radius)
   #
   if (is.list(alignment)==TRUE){
-    auto.pars=auto.align(Cy5.spots,Cy3.scale,alignment)
+    auto.pars=auto.align(Cy5.spots,Cy3.scale,Cy5.scale,alignment)
   }
   if (is.list(alignment)==FALSE){
     if (alignment=='manual'){
@@ -684,7 +686,7 @@ FRET.align <- function(path.to.file='./',file.name=NULL,alignment=list('r'=0.97,
   points(Cy5.spots$x,Cy5.spots$y,col = 'red')
   show(paste0('r = ',signif(r.adj.value,3)))
   show(paste0('theta = ',signif(theta.adj.value,3)))
-  show(paste0('RMSD = ',signif(sqrt(get.msd(c(r.adj.value,theta.adj.value),Cy5.spots,Cy3.scale)),3)))
+  show(paste0('RMSD = ',signif(sqrt(get.msd(c(r.adj.value,theta.adj.value),Cy5.spots,Cy3.scale,Cy5.scale)),3)))
   check.3=readline(prompt = 'Is initial alignment acceptable? (y/n):  '); if (check.3!='n' & check.3!='y'){stop('INVALID RESPONSE')}
   while (check.3=='n'){
     r.adj.value=as.numeric(readline(prompt = 'New scaling factor (ENTER for default):  '))
@@ -705,7 +707,7 @@ FRET.align <- function(path.to.file='./',file.name=NULL,alignment=list('r'=0.97,
     points(Cy5.spots$x,Cy5.spots$y,col = 'red')
     show(paste0('r = ',signif(r.adj.value,3)))
     show(paste0('theta = ',signif(theta.adj.value,3)))
-    show(paste0('RMSD = ',signif(sqrt(get.msd(c(r.adj.value,theta.adj.value),Cy5.spots,Cy3.scale)),3)))
+    show(paste0('RMSD = ',signif(sqrt(get.msd(c(r.adj.value,theta.adj.value),Cy5.spots,Cy3.scale,Cy5.scale)),3)))
     check.3=readline(prompt = 'Is alignment acceptable? (y/n/quit):  '); if (check.3=='quit'){stop('SCRIPT ABORTED BY USER')}; if (check.3!='n' & check.3!='y' & check.3!='quit'){stop('INVALID RESPONSE')}
   }
   show(paste0('Alignment complete -- beginning parameter export!'))
