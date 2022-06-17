@@ -150,6 +150,7 @@ id.spots <- function(time.step,path.to.file='./',file.name=NULL,spot.box=6,spot.
       stop('SCRIPT ABORTED BY USER')
     }
   }
+  show(paste0('Particle selection complete -- beginning data export!'))
   #
   particle.traces=matrix(0,nrow = frame.number,ncol = nrow(spots))
   particle.snaps=array(0,dim = c(2*spot.radius+1,2*spot.radius+1,20,nrow(spots)))
@@ -378,7 +379,7 @@ refine.particles <- function(path.to.file='./',file.name='Initial-Particle_Data.
       break
     }
   }
-  show(paste0('Particle refinement completed -- beginning data exports!'))
+  show(paste0('Particle refinement completed -- beginning data export!'))
   residence.calls=as.data.frame(as.matrix(residence.calls[2:nrow(residence.calls),])); for (k in 1:3){residence.calls[,k]=as.numeric(residence.calls[,k])}; colnames(residence.calls)=c('Particle','Bound','Residence')
   dwell.calls=as.data.frame(as.matrix(dwell.calls[2:nrow(dwell.calls),])); for (k in 1:3){dwell.calls[,k]=as.numeric(dwell.calls[,k])}; colnames(dwell.calls)=c('Particle','State','Dwell')
   if (skip.manual=='n'){
@@ -705,6 +706,7 @@ FRET.align <- function(path.to.file='./',file.name=NULL,alignment=list('r'=0.97,
     show(paste0('RMSD = ',signif(sqrt(get.msd(c(r.adj.value,theta.adj.value),Cy5.spots,Cy3.scale)),3)))
     check.3=readline(prompt = 'Is alignment acceptable? (y/n/quit):  '); if (check.3=='quit'){stop('SCRIPT ABORTED BY USER')}; if (check.3!='n' & check.3!='y' & check.3!='quit'){stop('INVALID RESPONSE')}
   }
+  show(paste0('Alignment complete -- beginning parameter export!'))
   # 
   save(r.adj.value,theta.adj.value,file = paste0(path.to.file,'Alignment_Parameters.RData'))
 }
@@ -1232,11 +1234,11 @@ FRET.refine <- function(path.to.file='./',file.name='Initial-Particle_Data.RData
         particles.to.keep[i]=TRUE
         COUNTER=COUNTER+1
         event.number=as.numeric(readline('How many events will you record for this particle?:  '))
-        if (length(event.number)==1 & is.na(event.number)==FALSE){
+        if (length(event.number)==1 & is.na(event.number)==FALSE & event.number>0){
           event.times=matrix(0,nrow=event.number,ncol = 4); event.times[,1]=rep(COUNTER,times=event.number)
           for (j in 1:event.number){
             show('Please click on the starting point then stopping point of a binding event (Trace Overlay -- x-axis).')
-            event.times[j,2:3]=as.numeric(identify((1:frame.number)*time.step,rep(0,times=frame.number),n=2,plot = FALSE)*time.step)
+            event.times[j,2:3]=as.numeric(identify((1:frame.number)*time.step,rep(min(na.omit(c(Cy3.trace.rolls[,i],Cy5.trace.rolls[,i]))),times=frame.number),n=2,plot = FALSE)*time.step)
             event.times[j,4]=diff(event.times[j,2:3])
             arrows(x0 = event.times[j,2],x1 = event.times[j,3],y0=max(na.omit(c(Cy3.trace.rolls[,i],Cy5.trace.rolls[,i]))),y1=max(na.omit(c(Cy3.trace.rolls[,i],Cy5.trace.rolls[,i]))),angle = 90,code = 3,col = 'black')
           }
