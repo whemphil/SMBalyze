@@ -666,8 +666,10 @@ FRET.align <- function(path.to.file='./',file.name=NULL,alignment=list('r'=0.97,
   if (is.list(alignment)==TRUE){
     auto.pars=auto.align(Cy5.spots,Cy3.scale,alignment)
   }
-  if (is.list(alignment)==FALSE & alignment=='manual'){
-    auto.pars=list('r'=1,'theta'=0)
+  if (is.list(alignment)==FALSE){
+    if (alignment=='manual'){
+      auto.pars=list('r'=1,'theta'=0)
+    }
   }
   r.adj.value=auto.pars[['r']]
   theta.adj.value=auto.pars[['theta']]
