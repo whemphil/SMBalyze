@@ -801,8 +801,8 @@ FRET.id <- function(time.step,path.to.file='./',Cy3.file.name=NULL,Cy5.file.name
     return(data)
   }
   pair.finder <- function(ref,data,delta){
-    x=data[,1]-ref[1]
-    y=data[,2]-ref[2]
+    x=data$x-ref[1]
+    y=data$y-ref[2]
     r=sqrt(x^2+y^2)
     if (min(r)<=delta){
       id=which.min(r)
@@ -937,27 +937,27 @@ FRET.id <- function(time.step,path.to.file='./',Cy3.file.name=NULL,Cy5.file.name
     par(fig = c(0,0.5,0,1))
     suppressWarnings(image(t(pracma::flipud(Cy3.image.avg)),col=gray.colors(cumprod(pixel.size)),x = 1:pixel.size[2],y=1:pixel.size[1],axes=FALSE,xlab='',ylab='',main = 'Cy3'))
     points(Cy5spots.Cy3axes$x,Cy5spots.Cy3axes$y,col='red',cex=0.5,pch='x')
-    points(Cy3.spots$x,Cy3.spots$y,col='green',cex=1.2)
-    show(paste0('Median Cy3 spot intensity = ',median(Cy3.spots$vol)))
-    show(paste0('Number of Cy3 spots identified = ',length(Cy3.spots$x)))
+    points(Cy3spots.Cy3axes$x,Cy3spots.Cy3axes$y,col='green',cex=1.2)
+    show(paste0('Median Cy3 spot intensity = ',median(Cy3spots.Cy3axes$vol)))
+    show(paste0('Number of Cy3 spots identified = ',length(Cy3spots.Cy3axes$x)))
     par(fig = c(0.5,1,0,1),new  = TRUE)
     suppressWarnings(image(t(pracma::flipud(Cy5.image.avg)),col=gray.colors(cumprod(pixel.size)),x = 1:pixel.size[2],y=1:pixel.size[1],axes=FALSE,xlab='',ylab='',main = 'Cy5'))
     points(Cy3spots.Cy5axes$x,Cy3spots.Cy5axes$y,col='green',cex=0.5,pch='x')
-    points(Cy5.spots$x,Cy5.spots$y,col='red',cex=1.2)
-    show(paste0('Median Cy5 spot intensity = ',median(Cy5.spots$vol)))
-    show(paste0('Number of Cy5 spots identified = ',length(Cy5.spots$x)))
+    points(Cy5spots.Cy5axes$x,Cy5spots.Cy5axes$y,col='red',cex=1.2)
+    show(paste0('Median Cy5 spot intensity = ',median(Cy5spots.Cy5axes$vol)))
+    show(paste0('Number of Cy5 spots identified = ',length(Cy5spots.Cy5axes$x)))
     check.2=readline(prompt = 'Is spot selection acceptable -- proceed to spot alignment and pairing? (y/n/quit):  ')
     if (check.2=='quit'){stop('SCRIPT ABORTED BY USER')}
     if (check.2!='n' & check.2!='y' & check.2!='quit'){stop('INVALID RESPONSE')}
   }
   #
-  delta=(0:20)
+  delta=(0:10)
   Cy3.pairs=matrix(0,nrow=nrow(Cy3spots.Cy3axes),ncol = length(delta))
   Cy5.pairs=matrix(0,nrow=nrow(Cy5spots.Cy3axes),ncol = length(delta))
   for (i in 1:length(delta)){
     COUNTER=0
     for (j in 1:nrow(Cy5spots.Cy3axes)){
-      pair.id=pair.finder(ref = Cy5spots.Cy3axes[j,1:2],data = Cy3spots.Cy3axes[,1:2],delta = delta[i])
+      pair.id=pair.finder(ref = c(Cy5spots.Cy3axes$x[j],Cy5spots.Cy3axes$y[j]),data = Cy3spots.Cy3axes,delta = delta[i])
       if (is.null(pair.id)==FALSE){
         COUNTER=COUNTER+1
         Cy5.pairs[j,i]=COUNTER
