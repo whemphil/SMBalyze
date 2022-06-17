@@ -170,6 +170,7 @@ id.spots <- function(time.step,path.to.file='./',file.name=NULL,spot.box=6,spot.
   save(list = c('image.avg','spots','particle.traces','particle.snaps','time.step','frame.number','pixel.size','spot.radius'),file = paste0(path.to.file,'Initial-Particle_Data.RData'))
   id.spots.output.files=list('composite image data'=image.avg,'initial particle summary'=spots,'particle traces'=particle.traces,'particle images data'=particle.snaps)
   return(id.spots.output.files)
+  system("say Export finished!")
 }
 
 refine.particles <- function(path.to.file='./',file.name='Initial-Particle_Data.RData',skip.manual='n',signal.step=NULL,auto.filter='none',classification.strategy='classic',background.subtraction='lower.quartile'){
@@ -371,12 +372,12 @@ refine.particles <- function(path.to.file='./',file.name='Initial-Particle_Data.
       if (temp.2=='quit'){
         stop('SCRIPT ABORTED BY USER')
       }
+      if (temp.2=='finish'){
+        break
+      }
     }
     if (skip.manual=='y' & i==1){
       temp.2='blank'
-    }
-    if (temp.2=='finish'){
-      break
     }
   }
   show(paste0('Particle refinement completed -- beginning data export!'))
@@ -561,7 +562,7 @@ FRET.align <- function(path.to.file='./',file.name=NULL,alignment=list('r'=0.97,
       msd=mean((Cy3.projection.signals-Cy5.signals.filtered)^2)
       return(msd)
     }
-    model.fit=optim(par = c(pars[['r']],pars[['theta']]),fn = get.msd,method = "L-BFGS-B",lower = c(0.8,-45),upper = c(1.09,45),Cy5.spots = Cy5.spots,Cy3.scale = Cy3.scale,Cy5.scale = Cy5.scale,control = list('ndeps'=c(0.01,0.5)))
+    model.fit=optim(par = c(pars[['r']],pars[['theta']]),fn = get.msd,method = "L-BFGS-B",lower = c(0.8,-45),upper = c(1.09,45),Cy5.spots = Cy5.spots,Cy3.scale = Cy3.scale,Cy5.scale = Cy5.scale,control = list('ndeps'=c(0.01,0.1)))
     fit.parameters=list('r'=model.fit[['par']][1],'theta'=model.fit[['par']][2])
     return(fit.parameters)
   }
@@ -969,10 +970,11 @@ FRET.id <- function(time.step,path.to.file='./',Cy3.file.name=NULL,Cy5.file.name
   }
   rm(COUNTER)
   #
-  delta.info=data.frame('delta'=delta,'Cy3.Spots'=colSums(Cy3.pairs==0),'Cy5.Spots'=colSums(Cy5.pairs==0),'DUAL.Spots'=colSums(Cy5.pairs!=0),'QC.Check'=((colSums(Cy3.pairs==0)[1]-colSums(Cy3.pairs==0))==colSums(Cy5.pairs!=0) & (colSums(Cy5.pairs==0)[1]-colSums(Cy5.pairs==0))==colSums(Cy5.pairs!=0)))
+  delta.info=data.frame('delta'=delta,'Cy3.Spots'=colSums(Cy3.pairs==0),'Cy5.Spots'=colSums(Cy5.pairs==0),'DUAL.Spots'=colSums(Cy5.pairs!=0),'QC.Pass'=((colSums(Cy3.pairs==0)[1]-colSums(Cy3.pairs==0))==colSums(Cy5.pairs!=0) & (colSums(Cy5.pairs==0)[1]-colSums(Cy5.pairs==0))==colSums(Cy5.pairs!=0)))
   show(delta.info)
   check.3='n'; while (check.3=='n'){
     input.1=as.numeric(readline(prompt = 'Which delta value would you like to proceed with? (0-10,quit):  '))
+    if (input.1=='quit'){stop('SCRIPT ABORTED BY USER')}
     temp.1.Cy3axes=rbind(Cy3spots.Cy3axes[Cy3.pairs[,delta==input.1]==0,1:4],Cy5spots.Cy3axes[Cy5.pairs[,delta==input.1]==0,1:4],(Cy3spots.Cy3axes[((Cy3.pairs[,delta==input.1])!=0),1:4])[order(Cy3.pairs[((Cy3.pairs[,delta==input.1])!=0),delta==input.1]),])
     temp.1.Cy5axes=rbind(Cy3spots.Cy5axes[Cy3.pairs[,delta==input.1]==0,1:4],Cy5spots.Cy5axes[Cy5.pairs[,delta==input.1]==0,1:4],Cy5spots.Cy5axes[Cy5.pairs[,delta==input.1]!=0,1:4])
     ALLspots.Cy3axes=data.frame('Particle.ID'=1:nrow(temp.1.Cy3axes),'x'=temp.1.Cy3axes[,1],'y'=temp.1.Cy3axes[,2],'row'=temp.1.Cy3axes[,3],'col'=temp.1.Cy3axes[,4],'Type.ID'=rep(c('Cy3','Cy5','DUAL'),times = delta.info[delta.info$delta==input.1,2:4]))
@@ -1012,6 +1014,7 @@ FRET.id <- function(time.step,path.to.file='./',Cy3.file.name=NULL,Cy5.file.name
   utils::write.table(Cy5.traces,file = paste0(path.to.file,'initial_particle_Cy5-traces.txt'),quote = FALSE,sep = '\t',row.names = TRUE,col.names = FALSE)
   save(list = c('Cy3.image.avg','ALLspots.Cy3axes','Cy3.traces','Cy3.snaps','Cy3.integration.radius','Cy5.image.avg','ALLspots.Cy5axes','Cy5.traces','Cy5.snaps','Cy5.integration.radius','time.step','frame.number','pixel.size'),file = paste0(path.to.file,'Initial-Particle_Data.RData'))
   return(id.spots.output.files)
+  system("say Export finished!")
 }
 
 FRET.refine <- function(path.to.file='./',file.name='Initial-Particle_Data.RData',auto.filter='none',spot.types='all',classification.strategy='classic',background.subtraction='lower.quartile'){
