@@ -5,7 +5,7 @@
 A function to independently identify and pair particles of interest from the stacked tiff image files of a single-molecule microscopy experiment using two cameras/filters, and to export signal vs time data for those particles.
 }
 \usage{
-FRET.id(time.step,path.to.file='./',Cy3.file.name=NULL,Cy5.file.name=NULL,align.file.name='Alignment_Parameters.RData',Cy3.search.box=6,Cy5.search.box=6,Cy3.integration.radius=6,Cy5.integration.radius=6,Cy3.spot.min=3500,Cy5.spot.min=1e4,Cy3.spot.max=Inf,Cy5.spot.max=Inf)}
+FRET.id(time.step,path.to.file='./',Cy3.file.name=NULL,Cy5.file.name=NULL,align.file.name='Alignment_Parameters.RData',Cy3.search.box=6,Cy5.search.box=6,Cy3.integration.radius=6,Cy5.integration.radius=6,Cy3.spot.min=3500,Cy5.spot.min=1e4,Cy3.spot.max=Inf,Cy5.spot.max=Inf,border.spots=F)}
 \arguments{
 \item{time.step}{A single numerical value, representing the exposure time-step between images in the input file.}
 \item{path.to.file}{A single character string indicating the path to the directory where the import file(s) are located. Write-out files will also be exported to this directory. DEFAULT = (working directory)}
@@ -20,6 +20,7 @@ FRET.id(time.step,path.to.file='./',Cy3.file.name=NULL,Cy5.file.name=NULL,align.
 \item{Cy5.spot.min}{A single numerical value, representing the minimum integration volume for identification as a spot on the Cy5-camera images. DEFAULT = 10000.}
 \item{Cy3.spot.max}{A single numerical value, representing the maximum integration volume for identification as a spot on the Cy3-camera images. DEFAULT = Inf.}
 \item{Cy5.spot.max}{A single numerical value, representing the maximum integration volume for identification as a spot on the Cy5-camera images. DEFAULT = Inf.}
+\item{border.spots}{A logical, indicating if spots close to the image border should be included. DEFAULT = FALSE.}
 }
 \value{
 Returns a list with the following components each for the Cy3-camera and Cy5-camera: composite image data = a numerical matrix containing data for a composite image of parent microscopy images, initial particle summary = a data frame containing indices and volume information for the identified particles, particle traces = a matrix providing signal vs time traces for all identified particles, & particle images data = an array providing image data for identified particles across time frames.

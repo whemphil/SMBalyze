@@ -716,7 +716,7 @@ FRET.align <- function(path.to.file='./',file.name=NULL,alignment=list('r'=0.97,
   save(r.adj.value,theta.adj.value,file = paste0(path.to.file,'Alignment_Parameters.RData'))
 }
 
-FRET.id <- function(time.step,path.to.file='./',Cy3.file.name=NULL,Cy5.file.name=NULL,align.file.name='Alignment_Parameters.RData',Cy3.search.box=6,Cy5.search.box=6,Cy3.integration.radius=6,Cy5.integration.radius=6,Cy3.spot.min=3500,Cy5.spot.min=1e4,Cy3.spot.max=Inf,Cy5.spot.max=Inf){
+FRET.id <- function(time.step,path.to.file='./',Cy3.file.name=NULL,Cy5.file.name=NULL,align.file.name='Alignment_Parameters.RData',Cy3.search.box=6,Cy5.search.box=6,Cy3.integration.radius=6,Cy5.integration.radius=6,Cy3.spot.min=0,Cy5.spot.min=0,Cy3.spot.max=Inf,Cy5.spot.max=Inf,border.spots=F){
   lq.calc <- function(input){
     input.2=na.omit(c(input))
     result=(input.2[order(input.2)])[round(0.25*length(input.2))]
@@ -874,9 +874,9 @@ FRET.id <- function(time.step,path.to.file='./',Cy3.file.name=NULL,Cy5.file.name
   row.num=dim(Cy3.image.avg)[1]
   centroid=rev(dim(Cy3.image.avg)/2+0.5)
   #
-  par(fig = c(0,0.5,0,1))
+  par(fig = c(0,0.5,0.5,1))
   suppressWarnings(image(t(pracma::flipud(Cy3.image.avg)),col=gray.colors(cumprod(pixel.size)),x = 1:pixel.size[2],y=1:pixel.size[1],axes=FALSE,xlab='',ylab='',main = 'Cy3'))
-  par(fig = c(0.5,1,0,1),new  = TRUE)
+  par(fig = c(0.5,1,0.5,1),new  = TRUE)
   suppressWarnings(image(t(pracma::flipud(Cy5.image.avg)),col=gray.colors(cumprod(pixel.size)),x = 1:pixel.size[2],y=1:pixel.size[1],axes=FALSE,xlab='',ylab='',main = 'Cy5'))
   check.1=readline(prompt = 'Image loading complete. Proceed with spot detection? (y/n):  '); if (check.1=='n'){stop('SCRIPT ABORTED BY USER')}; if (check.1!='n' & check.1!='y'){stop('INVALID RESPONSE')}
   #
@@ -886,18 +886,35 @@ FRET.id <- function(time.step,path.to.file='./',Cy3.file.name=NULL,Cy5.file.name
   Cy5spots.Cy3axes=C5toC3(input = Cy5.spots,centroid = centroid,row.num = row.num,r.factor = r.factor,theta.factor = theta.factor)
   Cy3spots.Cy3axes=Cy3.spots
   Cy3spots.Cy5axes=C3toC5(input = Cy3.spots,centroid = centroid,row.num = row.num,r.factor = r.factor,theta.factor = theta.factor)
-  par(fig = c(0,0.5,0,1))
+  if(border.spots==F){
+    Cy3.borderEX=((Cy3spots.Cy3axes$x>(Cy3.integration.radius+1)) & (Cy3spots.Cy5axes$x>(Cy5.integration.radius+1)) & ((pixel.size[1]-Cy3spots.Cy3axes$x)>(Cy3.integration.radius+1)) & ((pixel.size[1]-Cy3spots.Cy5axes$x)>(Cy5.integration.radius+1)) & (Cy3spots.Cy3axes$y>(Cy3.integration.radius+1)) & (Cy3spots.Cy5axes$y>(Cy5.integration.radius+1)) & ((pixel.size[2]-Cy3spots.Cy3axes$y)>(Cy3.integration.radius+1)) & ((pixel.size[2]-Cy3spots.Cy5axes$y)>(Cy5.integration.radius+1)))
+    Cy5.borderEX=((Cy5spots.Cy3axes$x>(Cy3.integration.radius+1)) & (Cy5spots.Cy5axes$x>(Cy5.integration.radius+1)) & ((pixel.size[1]-Cy5spots.Cy3axes$x)>(Cy3.integration.radius+1)) & ((pixel.size[1]-Cy5spots.Cy5axes$x)>(Cy5.integration.radius+1)) & (Cy5spots.Cy3axes$y>(Cy3.integration.radius+1)) & (Cy5spots.Cy5axes$y>(Cy5.integration.radius+1)) & ((pixel.size[2]-Cy5spots.Cy3axes$y)>(Cy3.integration.radius+1)) & ((pixel.size[2]-Cy5spots.Cy5axes$y)>(Cy5.integration.radius+1)))
+    Cy3.spots=Cy3.spots[Cy3.borderEX,]
+    Cy5.spots=Cy5.spots[Cy5.borderEX,]
+    Cy5spots.Cy5axes=Cy5.spots
+    Cy5spots.Cy3axes=C5toC3(input = Cy5.spots,centroid = centroid,row.num = row.num,r.factor = r.factor,theta.factor = theta.factor)
+    Cy3spots.Cy3axes=Cy3.spots
+    Cy3spots.Cy5axes=C3toC5(input = Cy3.spots,centroid = centroid,row.num = row.num,r.factor = r.factor,theta.factor = theta.factor)
+  }
+  if ((sum(c(Cy3spots.Cy3axes$x,Cy3spots.Cy5axes$x,Cy5spots.Cy3axes$x,Cy5spots.Cy5axes$x)<=(max(c(Cy3.integration.radius,Cy5.integration.radius))+1))>0) | (sum((pixel.size[1]-c(Cy3spots.Cy3axes$x,Cy3spots.Cy5axes$x,Cy5spots.Cy3axes$x,Cy5spots.Cy5axes$x))<=(max(c(Cy3.integration.radius,Cy5.integration.radius))+1))>0) | (sum(c(Cy3spots.Cy3axes$y,Cy3spots.Cy5axes$y,Cy5spots.Cy3axes$y,Cy5spots.Cy5axes$y)<=(max(c(Cy3.integration.radius,Cy5.integration.radius))+1))>0) | (sum((pixel.size[2]-c(Cy3spots.Cy3axes$y,Cy3spots.Cy5axes$y,Cy5spots.Cy3axes$y,Cy5spots.Cy5axes$y))<=(max(c(Cy3.integration.radius,Cy5.integration.radius))+1))>0)){
+    warning('ALERT:  Some spots may be too close to image border(s) -- consider re-selection!',immediate. = T)
+  }
+  par(fig = c(0,0.5,0.5,1))
   suppressWarnings(image(t(pracma::flipud(Cy3.image.avg)),col=gray.colors(cumprod(pixel.size)),x = 1:pixel.size[2],y=1:pixel.size[1],axes=FALSE,xlab='',ylab='',main = 'Cy3'))
   points(Cy5spots.Cy3axes$x,Cy5spots.Cy3axes$y,col='red',cex=0.5,pch='x')
   points(Cy3.spots$x,Cy3.spots$y,col='green',cex=1.2)
   show(paste0('Median Cy3 spot intensity = ',median(Cy3.spots$vol)))
   show(paste0('Number of Cy3 spots identified = ',length(Cy3.spots$x)))
-  par(fig = c(0.5,1,0,1),new  = TRUE)
+  par(fig = c(0.5,1,0.5,1),new  = TRUE)
   suppressWarnings(image(t(pracma::flipud(Cy5.image.avg)),col=gray.colors(cumprod(pixel.size)),x = 1:pixel.size[2],y=1:pixel.size[1],axes=FALSE,xlab='',ylab='',main = 'Cy5'))
   points(Cy3spots.Cy5axes$x,Cy3spots.Cy5axes$y,col='green',cex=0.5,pch='x')
   points(Cy5.spots$x,Cy5.spots$y,col='red',cex=1.2)
   show(paste0('Median Cy5 spot intensity = ',median(Cy5.spots$vol)))
   show(paste0('Number of Cy5 spots identified = ',length(Cy5.spots$x)))
+  par(fig = c(0,0.5,0,0.5),new  = TRUE)
+  hist((Cy3.spots$vol),col='green',main='Cy3 Spots Distribution',xlab='Integration Volume',ylab='# of Spots')
+  par(fig = c(0.5,1,0,0.5),new  = TRUE)
+  hist((Cy5.spots$vol),col='red',main='Cy5 Spots Distribution',xlab='Integration Volume',ylab='# of Spots')
   check.2=readline(prompt = 'Is spot selection acceptable -- proceed to spot alignment and pairing? (y/n/quit):  '); if (check.2=='quit'){stop('SCRIPT ABORTED BY USER')}; if (check.2!='n' & check.2!='y' & check.2!='quit'){stop('INVALID RESPONSE')}; while (check.2=='n'){
     Cy3.search.box=as.numeric(readline(prompt = 'New Cy3 spot search box radius (ENTER for default):  '))
     if (is.na(Cy3.search.box)==T){
@@ -917,11 +934,11 @@ FRET.id <- function(time.step,path.to.file='./',Cy3.file.name=NULL,Cy5.file.name
     }
     Cy3.spot.min=as.numeric(readline(prompt = 'New Cy3 spot volume minimum (ENTER for default):  '))
     if (is.na(Cy3.spot.min)==T){
-      Cy3.spot.min=3500
+      Cy3.spot.min=0
     }
     Cy5.spot.min=as.numeric(readline(prompt = 'New Cy5 spot volume minimum (ENTER for default):  '))
     if (is.na(Cy5.spot.min)==T){
-      Cy5.spot.min=1e4
+      Cy5.spot.min=0
     }
     Cy3.spot.max=as.numeric(readline(prompt = 'New Cy3 spot volume maximum (ENTER for default):  '))
     if (is.na(Cy3.spot.max)==T){
@@ -937,18 +954,35 @@ FRET.id <- function(time.step,path.to.file='./',Cy3.file.name=NULL,Cy5.file.name
     Cy5spots.Cy3axes=C5toC3(input = Cy5.spots,centroid = centroid,row.num = row.num,r.factor = r.factor,theta.factor = theta.factor)
     Cy3spots.Cy3axes=Cy3.spots
     Cy3spots.Cy5axes=C3toC5(input = Cy3.spots,centroid = centroid,row.num = row.num,r.factor = r.factor,theta.factor = theta.factor)
-    par(fig = c(0,0.5,0,1))
+    if(border.spots==F){
+      Cy3.borderEX=((Cy3spots.Cy3axes$x>(Cy3.integration.radius+1)) & (Cy3spots.Cy5axes$x>(Cy5.integration.radius+1)) & ((pixel.size[1]-Cy3spots.Cy3axes$x)>(Cy3.integration.radius+1)) & ((pixel.size[1]-Cy3spots.Cy5axes$x)>(Cy5.integration.radius+1)) & (Cy3spots.Cy3axes$y>(Cy3.integration.radius+1)) & (Cy3spots.Cy5axes$y>(Cy5.integration.radius+1)) & ((pixel.size[2]-Cy3spots.Cy3axes$y)>(Cy3.integration.radius+1)) & ((pixel.size[2]-Cy3spots.Cy5axes$y)>(Cy5.integration.radius+1)))
+      Cy5.borderEX=((Cy5spots.Cy3axes$x>(Cy3.integration.radius+1)) & (Cy5spots.Cy5axes$x>(Cy5.integration.radius+1)) & ((pixel.size[1]-Cy5spots.Cy3axes$x)>(Cy3.integration.radius+1)) & ((pixel.size[1]-Cy5spots.Cy5axes$x)>(Cy5.integration.radius+1)) & (Cy5spots.Cy3axes$y>(Cy3.integration.radius+1)) & (Cy5spots.Cy5axes$y>(Cy5.integration.radius+1)) & ((pixel.size[2]-Cy5spots.Cy3axes$y)>(Cy3.integration.radius+1)) & ((pixel.size[2]-Cy5spots.Cy5axes$y)>(Cy5.integration.radius+1)))
+      Cy3.spots=Cy3.spots[Cy3.borderEX,]
+      Cy5.spots=Cy5.spots[Cy5.borderEX,]
+      Cy5spots.Cy5axes=Cy5.spots
+      Cy5spots.Cy3axes=C5toC3(input = Cy5.spots,centroid = centroid,row.num = row.num,r.factor = r.factor,theta.factor = theta.factor)
+      Cy3spots.Cy3axes=Cy3.spots
+      Cy3spots.Cy5axes=C3toC5(input = Cy3.spots,centroid = centroid,row.num = row.num,r.factor = r.factor,theta.factor = theta.factor)
+    }
+    if ((sum(c(Cy3spots.Cy3axes$x,Cy3spots.Cy5axes$x,Cy5spots.Cy3axes$x,Cy5spots.Cy5axes$x)<=(max(c(Cy3.integration.radius,Cy5.integration.radius))+1))>0) | (sum((pixel.size[1]-c(Cy3spots.Cy3axes$x,Cy3spots.Cy5axes$x,Cy5spots.Cy3axes$x,Cy5spots.Cy5axes$x))<=(max(c(Cy3.integration.radius,Cy5.integration.radius))+1))>0) | (sum(c(Cy3spots.Cy3axes$y,Cy3spots.Cy5axes$y,Cy5spots.Cy3axes$y,Cy5spots.Cy5axes$y)<=(max(c(Cy3.integration.radius,Cy5.integration.radius))+1))>0) | (sum((pixel.size[2]-c(Cy3spots.Cy3axes$y,Cy3spots.Cy5axes$y,Cy5spots.Cy3axes$y,Cy5spots.Cy5axes$y))<=(max(c(Cy3.integration.radius,Cy5.integration.radius))+1))>0)){
+      warning('ALERT:  Some spots may be too close to image border(s) -- consider re-selection!',immediate. = T)
+    }
+    par(fig = c(0,0.5,0.5,1))
     suppressWarnings(image(t(pracma::flipud(Cy3.image.avg)),col=gray.colors(cumprod(pixel.size)),x = 1:pixel.size[2],y=1:pixel.size[1],axes=FALSE,xlab='',ylab='',main = 'Cy3'))
     points(Cy5spots.Cy3axes$x,Cy5spots.Cy3axes$y,col='red',cex=0.5,pch='x')
     points(Cy3spots.Cy3axes$x,Cy3spots.Cy3axes$y,col='green',cex=1.2)
     show(paste0('Median Cy3 spot intensity = ',median(Cy3spots.Cy3axes$vol)))
     show(paste0('Number of Cy3 spots identified = ',length(Cy3spots.Cy3axes$x)))
-    par(fig = c(0.5,1,0,1),new  = TRUE)
+    par(fig = c(0.5,1,0.5,1),new  = TRUE)
     suppressWarnings(image(t(pracma::flipud(Cy5.image.avg)),col=gray.colors(cumprod(pixel.size)),x = 1:pixel.size[2],y=1:pixel.size[1],axes=FALSE,xlab='',ylab='',main = 'Cy5'))
     points(Cy3spots.Cy5axes$x,Cy3spots.Cy5axes$y,col='green',cex=0.5,pch='x')
     points(Cy5spots.Cy5axes$x,Cy5spots.Cy5axes$y,col='red',cex=1.2)
     show(paste0('Median Cy5 spot intensity = ',median(Cy5spots.Cy5axes$vol)))
     show(paste0('Number of Cy5 spots identified = ',length(Cy5spots.Cy5axes$x)))
+    par(fig = c(0,0.5,0,0.5),new  = TRUE)
+    hist((Cy3.spots$vol),col='green',main='Cy3 Spots Distribution',xlab='Integration Volume',ylab='# of Spots')
+    par(fig = c(0.5,1,0,0.5),new  = TRUE)
+    hist((Cy5.spots$vol),col='red',main='Cy5 Spots Distribution',xlab='Integration Volume',ylab='# of Spots')
     check.2=readline(prompt = 'Is spot selection acceptable -- proceed to spot alignment and pairing? (y/n/quit):  ')
     if (check.2=='quit'){stop('SCRIPT ABORTED BY USER')}
     if (check.2!='n' & check.2!='y' & check.2!='quit'){stop('INVALID RESPONSE')}
@@ -979,10 +1013,10 @@ FRET.id <- function(time.step,path.to.file='./',Cy3.file.name=NULL,Cy5.file.name
     temp.1.Cy5axes=rbind(Cy3spots.Cy5axes[Cy3.pairs[,delta==input.1]==0,1:4],Cy5spots.Cy5axes[Cy5.pairs[,delta==input.1]==0,1:4],Cy5spots.Cy5axes[Cy5.pairs[,delta==input.1]!=0,1:4])
     ALLspots.Cy3axes=data.frame('Particle.ID'=1:nrow(temp.1.Cy3axes),'x'=temp.1.Cy3axes[,1],'y'=temp.1.Cy3axes[,2],'row'=temp.1.Cy3axes[,3],'col'=temp.1.Cy3axes[,4],'Type.ID'=rep(c('Cy3','Cy5','DUAL'),times = delta.info[delta.info$delta==input.1,2:4]))
     ALLspots.Cy5axes=data.frame('Particle.ID'=1:nrow(temp.1.Cy5axes),'x'=temp.1.Cy5axes[,1],'y'=temp.1.Cy5axes[,2],'row'=temp.1.Cy5axes[,3],'col'=temp.1.Cy5axes[,4],'Type.ID'=rep(c('Cy3','Cy5','DUAL'),times = delta.info[delta.info$delta==input.1,2:4]))
-    par(fig = c(0,0.5,0,1))
+    par(fig = c(0,0.5,0.5,1))
     suppressWarnings(image(t(pracma::flipud(Cy3.image.avg)),col=gray.colors(cumprod(pixel.size)),x = 1:pixel.size[2],y=1:pixel.size[1],axes=FALSE,xlab='',ylab='',main = 'Cy3'))
     points(ALLspots.Cy3axes$x,ALLspots.Cy3axes$y,col=rep(c('green','red','blue'),times = delta.info[delta.info$delta==input.1,2:4]),cex=1.2)
-    par(fig = c(0.5,1,0,1),new  = TRUE)
+    par(fig = c(0.5,1,0.5,1),new  = TRUE)
     suppressWarnings(image(t(pracma::flipud(Cy5.image.avg)),col=gray.colors(cumprod(pixel.size)),x = 1:pixel.size[2],y=1:pixel.size[1],axes=FALSE,xlab='',ylab='',main = 'Cy5'))
     points(ALLspots.Cy5axes$x,ALLspots.Cy5axes$y,col=rep(c('green','red','blue'),times = delta.info[delta.info$delta==input.1,2:4]),cex=1.2)
     check.3=readline(prompt = 'Is delta selection acceptable -- proceed to calculations and file export? (y/n/quit):  ')
@@ -1017,7 +1051,7 @@ FRET.id <- function(time.step,path.to.file='./',Cy3.file.name=NULL,Cy5.file.name
   system("say Export finished!")
 }
 
-FRET.refine <- function(path.to.file='./',file.name='Initial-Particle_Data.RData',auto.filter='none',spot.types='all',classification.strategy='classic',background.subtraction='lower.quartile'){
+FRET.refine <- function(path.to.file='./',file.name='Initial-Particle_Data.RData',auto.filter='none',spot.types='all',classification.strategy='classic',background.subtraction='individual',time.fix=NULL){
   count.condense <- function(input){
     new.count=input
     for (i in 1:length(input)){
@@ -1027,7 +1061,7 @@ FRET.refine <- function(path.to.file='./',file.name='Initial-Particle_Data.RData
   }
   woh.scale <- function(data){
     a=c(data)
-    b=(data-min(a))/diff(range(a))
+    b=(data-min(a,na.rm = TRUE))/diff(range(a,na.rm = TRUE))
     return(b)
   }
   lq.calc <- function(input){
@@ -1040,11 +1074,24 @@ FRET.refine <- function(path.to.file='./',file.name='Initial-Particle_Data.RData
     mode=k[['x']][which.max(k[['y']])]
     return(mode)
   }
-  classify.states <- function(data,signal.step,fun='classic',background=0){
+  jump.id <- function(vector,var.n,var.d){
+    n=length(vector)
+    jump.d=rep(NA,times=n)
+    for (i in 1:n){
+      if((abs(i-c(1,n))>var.n)==2){
+        a.1=vector[(i-var.n):(i-1)]
+        a.2=vector[(i+1):(i+var.n)]
+        jump.d[i]=abs((mean(a.1)-mean(a.2))/sqrt((sd(a.1)^2+sd(a.2)^2)/2))
+      }
+    }
+    jump.ids=which((jump.d>=var.d) & (splus2R::peaks(x = jump.d,span = 2*var.n+1)))
+    return(jump.ids)
+  }
+  classify.states <- function(data,signal.step,fun='classic',background=0,var.n=3,var.d=1.5,eps=1){
     if (fun=='classic'){
       fit=smooth.spline((1:length(data))[is.na(data)==F],na.omit(data),spar = 0.5)
       d1=predict(object = fit,x = 1:length(data),deriv = 1)
-      swaps=c(1,d1[['x']][(abs(d1[['y']])>=1.0) & (splus2R::peaks(x = abs(d1[['y']]),span = 5))],max(d1[['x']]))
+      swaps=c(1,d1[['x']][(abs(d1[['y']])>=1e-2) & (splus2R::peaks(x = abs(d1[['y']]),span = 5))],max(d1[['x']]))
       pos.averages=rep(NA,times=length(data))
       states=rep(0,times=length(data))
       state.averages=rep(NA,times=length(data))
@@ -1106,9 +1153,7 @@ FRET.refine <- function(path.to.file='./',file.name='Initial-Particle_Data.RData
     }
     if (fun=='var.shift'){
       pos.averages=rep(NA,times=length(data))
-      fit=smooth.spline((1:length(data))[is.na(data)==F],na.omit(data),spar = 0.5)
-      d1=predict(object = fit,x = 1:length(data),deriv = 1)
-      swaps=c(1,d1[['x']][(abs(d1[['y']])>=1.0) & (splus2R::peaks(x = abs(d1[['y']]),span = 5))],max(d1[['x']]))
+      swaps=c(1,jump.id(data,var.n,var.d),length(data))
       for (i in 1:(length(swaps)-1)){
         pos.averages[swaps[i]:swaps[i+1]]=mean(na.omit(data[swaps[i]:swaps[i+1]]))
       }
@@ -1116,26 +1161,28 @@ FRET.refine <- function(path.to.file='./',file.name='Initial-Particle_Data.RData
         temp.0=order(datter)
         temp.1=datter[temp.0]
         temp.2=c(abs(temp.1[1:(length(temp.1)-1)]-temp.1[2:length(temp.1)]),0)>eps
-        temp.3=c(1,(1:length(temp.2))[temp.2],length(temp.2))
-        temp.4=rep(NA,times=length(temp.2))
+        temp.3=c(0,(1:length(temp.2))[temp.2],length(temp.2))
+        temp.4=rep(NA,times=length(temp.1))
         for (i in 1:(length(temp.3)-1)){
-          temp.4[(temp.3[i]):(temp.3[i+1])]=i
+          temp.4[(temp.3[i]+1):(temp.3[i+1])]=i-1
         }
         temp.5=temp.4[order(temp.0)]
         return(temp.5)
       }
-      classes=var.shift(pos.averages,eps = 1.7*sd(na.omit(data-pos.averages)))
+      classes=var.shift(pos.averages,eps*sd(na.omit(data-pos.averages)))
       values=rep(NA,times=length(classes))
       for (k in 0:max(classes)){
         values[classes==k]=mean(na.omit(data[classes==k]))
       }
-      classes[abs(values)<=2*sd(na.omit(data-pos.averages))]=0
       final=data.frame('id'=classes,'avg'=values)
       return(final)
     }
   }
   #
   load(file = paste0(path.to.file,file.name))
+  if (is.null(time.fix)==F){
+    time.step=time.fix
+  }
   Cy3.trace.rolls=apply(Cy3.traces,MARGIN = c(2),FUN = data.table::frollmean,n=5,align='center')
   Cy5.trace.rolls=apply(Cy5.traces,MARGIN = c(2),FUN = data.table::frollmean,n=5,align='center')
   if (background.subtraction=='k.mode'){
@@ -1156,6 +1203,15 @@ FRET.refine <- function(path.to.file='./',file.name='Initial-Particle_Data.RData
     Cy5.background=lq.calc(classify.states(Cy5.trace.rolls,fun = 'basic'))
     Cy5.trace.rolls=Cy5.trace.rolls-Cy5.background
   }
+  if (background.subtraction=='individual'){
+    Cy3.background=matrix(rep(apply(classify.states(Cy3.trace.rolls,fun = 'basic'),MARGIN = c(2),FUN = min,na.rm=TRUE),each=nrow(Cy3.trace.rolls)),nrow = nrow(Cy3.trace.rolls),ncol = ncol(Cy3.trace.rolls))
+    Cy5.background=matrix(rep(apply(classify.states(Cy5.trace.rolls,fun = 'basic'),MARGIN = c(2),FUN = min,na.rm=TRUE),each=nrow(Cy5.trace.rolls)),nrow = nrow(Cy5.trace.rolls),ncol = ncol(Cy5.trace.rolls))
+    rmsd.fit <- function(data,fit){resid=(data-fit)^2;rmsd=sqrt(colMeans(resid,na.rm = TRUE));return(rmsd)}
+    Cy3.scalar=matrix(rep(rmsd.fit(Cy3.trace.rolls,classify.states(Cy3.trace.rolls,fun = 'basic')),each=nrow(Cy3.trace.rolls)),nrow = nrow(Cy3.trace.rolls),ncol = ncol(Cy3.trace.rolls))
+    Cy5.scalar=matrix(rep(rmsd.fit(Cy5.trace.rolls,classify.states(Cy5.trace.rolls,fun = 'basic')),each=nrow(Cy5.trace.rolls)),nrow = nrow(Cy5.trace.rolls),ncol = ncol(Cy5.trace.rolls))
+    Cy3.trace.rolls=(Cy3.trace.rolls-Cy3.background)/Cy3.scalar
+    Cy5.trace.rolls=(Cy5.trace.rolls-Cy5.background)/Cy5.scalar
+  }
   #
   particles.to.keep=rep(FALSE,times=nrow(ALLspots.Cy3axes))
   residence.times=c('Particle','Start','Stop','Residence')
@@ -1166,8 +1222,12 @@ FRET.refine <- function(path.to.file='./',file.name='Initial-Particle_Data.RData
   if (classification.strategy=='classic' | classification.strategy=='var.shift'){
     Cy3.state.calls=matrix(NA,nrow = frame.number,ncol = nrow(ALLspots.Cy3axes))
     Cy5.state.calls=matrix(NA,nrow = frame.number,ncol = nrow(ALLspots.Cy5axes))
-    Cy3.signal.step=3*sd(na.omit(Cy3.trace.rolls-classify.states(Cy3.trace.rolls,fun = 'basic')))
-    Cy5.signal.step=3*sd(na.omit(Cy5.trace.rolls-classify.states(Cy5.trace.rolls,fun = 'basic')))
+    Cy3.signal.step=1.5*sd(na.omit(Cy3.trace.rolls-classify.states(Cy3.trace.rolls,fun = 'basic')))
+    Cy5.signal.step=1.5*sd(na.omit(Cy5.trace.rolls-classify.states(Cy5.trace.rolls,fun = 'basic')))
+    if (background.subtraction=='individual'){
+      Cy3.signal.step=3
+      Cy5.signal.step=3
+    }
   }
   if (classification.strategy=='uni.dbscan'){
     Cy3.classifications=classify.states(Cy3.trace.rolls,fun = 'uni.dbscan')
@@ -1198,7 +1258,7 @@ FRET.refine <- function(path.to.file='./',file.name='Initial-Particle_Data.RData
     }
   }
   #
-  par(fig=c(0,1,0,1))
+  par(fig=c(0,1,0.5,1))
   plot((1:frame.number)*time.step,apply(Cy3.state.calls>0,MARGIN = c(1),FUN = sum)/nrow(ALLspots.Cy3axes),type='l',col='green',main='Photobleaching Check',xlab='Time (s)',ylab='Proportion of Bound Particles',ylim = range(c(apply(Cy3.state.calls>0,MARGIN = c(1),FUN = sum)/nrow(ALLspots.Cy3axes),apply(Cy5.state.calls>0,MARGIN = c(1),FUN = sum)/nrow(ALLspots.Cy5axes))))
   lines((1:frame.number)*time.step,apply(Cy5.state.calls>0,MARGIN = c(1),FUN = sum)/nrow(ALLspots.Cy5axes),col='red')
   check.1=readline('Proceed with particle refinement? (y/n):  ')
@@ -1231,10 +1291,10 @@ FRET.refine <- function(path.to.file='./',file.name='Initial-Particle_Data.RData
       plot((1:frame.number)*time.step,Cy5.trace.rolls[,i],type='l',main = 'Cy5 Trace',xlab='Time (s)',ylab = 'Signal')
       lines(((1:frame.number)*time.step)[is.na(Cy5.states$avg)==F],Cy5.states$avg[is.na(Cy5.states$avg)==F],col='red',lwd=3)
       par(fig=c(0,0.5,0,0.25),new = TRUE)
-      plot(((1:frame.number)*time.step)[is.na(Cy3.states$avg)==F],Cy3.states$avg[is.na(Cy3.states$avg)==F],type='l',main = 'State Overlay',xlab='Time (s)',ylab = 'Signal',col='green',ylim = range(na.omit(c(Cy3.states$avg[is.na(Cy3.states$avg)==F],Cy5.states$avg[is.na(Cy5.states$avg)==F]))))
+      plot(((1:frame.number)*time.step)[is.na(Cy3.states$avg)==F],Cy3.states$avg[is.na(Cy3.states$avg)==F],type='l',main = 'State Overlay',xlab='Time (s)',ylab = 'State',col='green',ylim = c(0,max(c(Cy3.states$avg[is.na(Cy3.states$avg)==F],Cy5.states$avg[is.na(Cy5.states$avg)==F]))))
       lines(((1:frame.number)*time.step)[is.na(Cy5.states$avg)==F],Cy5.states$avg[is.na(Cy5.states$avg)==F],col='red')
       par(fig=c(0.5,1,0,0.25),new = TRUE)
-      plot((1:frame.number)*time.step,Cy3.trace.rolls[,i],type='l',main = 'Trace Overlay',xlab='Time (s)',ylab = 'Signal',col='green',ylim = range(na.omit(c(Cy3.trace.rolls[,i],Cy5.trace.rolls[,i]))))
+      plot((1:frame.number)*time.step,Cy3.trace.rolls[,i],type='l',main = 'Trace Overlay',xlab='Time (s)',ylab = 'Signal',col='green',ylim = c(0,max(c(Cy3.trace.rolls[,i],Cy5.trace.rolls[,i]),na.rm = TRUE)))
       lines((1:frame.number)*time.step,Cy5.trace.rolls[,i],col='red')
       check.2=readline('Should this particle be used for analysis? (y/n/quit/finish):  ')
       if (check.2=='y'){
@@ -1256,9 +1316,9 @@ FRET.refine <- function(path.to.file='./',file.name='Initial-Particle_Data.RData
       if (check.2=='quit'){
         stop('SCRIPT ABORTED BY USER')
       }
-    }
-    if (check.2=='finish'){
-      break
+      if (check.2=='finish'){
+        break
+      }
     }
   }
   show(paste0('Particle refinement completed -- beginning data exports!'))

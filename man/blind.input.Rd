@@ -20,3 +20,5 @@ Files:
 \note{
 Input tiff files should be named [visibles]_[invisibles].tif, where [visibles] is information necessary for analysis to be provided for each blinded file and [invisibles] is the additional information to be hidden during the file blinding; the [visibles] and [invisibles] strings should not contain the '_' character.
 }
+
+
