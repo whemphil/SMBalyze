@@ -12,7 +12,7 @@ calc.kn1(path.to.file='./',file.name='Refined-Particle_Data.RData',use.auto.time
 \item{file.name}{The name of the Rdata output file from the 'refine.particles' function. DEFAULT = 'Refined-Particle_Data.RData'.}
 \item{use.auto.times}{Should the automatcally called residence data, as opposed to manually selected, be used for analysis (y/n)? DEFAULT = 'n'.}
 \item{min.residence}{The minimum residence times to be included in analysis. DEFAULT = 0.}
-\item{max.residence}{A sThe maximum residence times to be included in analysis. DEFAULT = Inf.}
+\item{max.residence}{The maximum residence times to be included in analysis. DEFAULT = Inf.}
 }
 \value{
 
