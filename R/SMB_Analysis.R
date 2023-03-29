@@ -31,7 +31,7 @@ id.spots <- function(time.step,path.to.file='./',file.name=NULL,spot.box=6,spot.
     }
     if (spot.picking=='composite'){
       if (is.null(low.lim)==TRUE){
-        low.lim=500
+        low.lim=0
       }
       col.id=t(array(1:dim(data)[2],dim = dim(data)[c(2,1)]))
       row.id=array(1:dim(data)[1],dim = dim(data))
@@ -112,6 +112,11 @@ id.spots <- function(time.step,path.to.file='./',file.name=NULL,spot.box=6,spot.
   points(spots$x,spots$y,col='red',cex=1.2)
   show(paste0('Median particle intensity = ',median(spots$vol)))
   show(paste0('Number of particles identified = ',length(spots$x)))
+  wh.cdf=ecdf(spots$vol);plot(wh.cdf)
+  show('Please click on the desired minimum signal value.')
+  min.vol.input=seq(0,max(spots$vol),max(spots$vol)/1e5)[as.numeric(identify(seq(0,max(spots$vol),max(spots$vol)/1e5),wh.cdf(seq(0,max(spots$vol),max(spots$vol)/1e5)),n=1,plot=F))]
+  abline(v=min.vol.input,col='blue')
+  show(min.vol.input)
   #
   check.2=readline(prompt = 'Is initial particle selection acceptable? (y/n):  '); while (check.2=='n'){
     spot.box=as.numeric(readline(prompt = 'New spot selection box size (ENTER for default):  '))
@@ -125,7 +130,7 @@ id.spots <- function(time.step,path.to.file='./',file.name=NULL,spot.box=6,spot.
     spot.min=as.numeric(readline(prompt = 'New spot minimum signal (ENTER for default):  '))
     if (is.na(spot.min)==T){
       if (spot.picking=='composite'){
-        spot.min=500
+        spot.min=0
       }
       if (spot.picking=='all.frames'){
         spot.min=0
@@ -156,7 +161,7 @@ id.spots <- function(time.step,path.to.file='./',file.name=NULL,spot.box=6,spot.
   particle.snaps=array(0,dim = c(2*spot.radius+1,2*spot.radius+1,20,nrow(spots)))
   snap.length=frame.number/20
   for (i in 1:nrow(spots)){
-    particle.traces[,i]=apply(image.data[(spots$row[i]-spot.radius):(spots$row[i]+spot.radius),(spots$col[i]-spot.radius):(spots$col[i]+spot.radius),],MARGIN = c(3),FUN = sum)-apply(image.data[(spots$row[i]-spot.radius):(spots$row[i]+spot.radius),(spots$col[i]-spot.radius):(spots$col[i]+spot.radius),],MARGIN = c(3),FUN = median)*((2*spot.radius+1)^2)
+    particle.traces[,i]=apply(image.data[(spots$row[i]-spot.radius):(spots$row[i]+spot.radius),(spots$col[i]-spot.radius):(spots$col[i]+spot.radius),],MARGIN = c(3),FUN = mean)-apply(image.data[(spots$row[i]-spot.radius):(spots$row[i]+spot.radius),(spots$col[i]-spot.radius):(spots$col[i]+spot.radius),],MARGIN = c(3),FUN = median)
     for (j in 1:20){
       particle.snaps[,,j,i]=apply(image.data[(spots$row[i]-spot.radius):(spots$row[i]+spot.radius),(spots$col[i]-spot.radius):(spots$col[i]+spot.radius),((j-1)*snap.length+1):(j*snap.length)],MARGIN = c(1,2),FUN = mean)
     }
@@ -459,117 +464,16 @@ calc.kn1 <- function(path.to.file='./',file.name='Refined-Particle_Data.RData',u
   }
 }
 
-FRET.align <- function(path.to.file='./',file.name=NULL,alignment=list('r'=0.97,'theta'=7),search.radius=6,integration.radius=6,spot.min=NULL,spot.max=Inf){
-  cart2pol <- function(data,centroid){
-    data.pol=data.frame('r'=sqrt((data$x-centroid[1])^2+(data$y-centroid[2])^2),'theta'=atan2((data$y-centroid[2]),(data$x-centroid[1]))*180/pi)
-    return(data.pol)
-  }
-  pol2cart <- function(data,centroid){
-    data.cart=data.frame('x'=data$r*cos(data$theta*pi/180)+centroid[1],'y'=data$r*sin(data$theta*pi/180)+centroid[2])
-    return(data.cart)
-  }
-  cart2mat <- function(data,row.num){
-    data.mat=data.frame('row'=round(row.num-data$y+1),'col'=round(data$x))
-    return(data.mat)
-  }
-  mat2cart <- function(data,row.num){
-    data.cart=data.frame('x'=data$col,'y'=row.num-data$row+1)
-    return(data.cart)
-  }
-  pol.adjust <- function(data,r.factor,theta.factor){
-    data.adj=data.frame('r'=data$r*r.factor,'theta'=data$theta+theta.factor)
-    return(data.adj)
-  }
-  get.msd <- function(par,Cy5.spots,Cy3.scale,Cy5.scale){
-    cart2pol <- function(data,centroid){
-      data.pol=data.frame('r'=sqrt((data$x-centroid[1])^2+(data$y-centroid[2])^2),'theta'=atan2((data$y-centroid[2]),(data$x-centroid[1]))*180/pi)
-      return(data.pol)
-    }
-    pol2cart <- function(data,centroid){
-      data.cart=data.frame('x'=data$r*cos(data$theta*pi/180)+centroid[1],'y'=data$r*sin(data$theta*pi/180)+centroid[2])
-      return(data.cart)
-    }
-    cart2mat <- function(data,row.num){
-      data.mat=data.frame('row'=round(row.num-data$y+1),'col'=round(data$x))
-      return(data.mat)
-    }
-    mat2cart <- function(data,row.num){
-      data.cart=data.frame('x'=data$col,'y'=row.num-data$row+1)
-      return(data.cart)
-    }
-    pol.adjust <- function(data,r.factor,theta.factor){
-      data.adj=data.frame('r'=data$r*r.factor,'theta'=data$theta+theta.factor)
-      return(data.adj)
-    }
-    mat.id.grab <- function(row.col,data){
-      value=data[row.col[1],row.col[2]]
-      return(value)
-    }
-    row.num=dim(Cy3.scale)[1]
-    centroid=rev(dim(Cy3.scale)/2+0.5)
-    r.factor=par[1]
-    theta.factor=par[2]
-    #
-    Cy3.projections=cart2mat(pol2cart(pol.adjust(cart2pol(Cy5.spots[,1:2],centroid),r.factor,theta.factor),centroid),row.num)
-    Cy3.projections.filtered=Cy3.projections[(Cy3.projections$row<=dim(Cy3.scale)[1] & Cy3.projections$col<=dim(Cy3.scale)[2]),]
-    Cy3.projection.signals=apply(X = Cy3.projections.filtered,MARGIN = 1,FUN = mat.id.grab,data=Cy3.scale)
-    Cy5.spots.filtered=Cy5.spots[(Cy3.projections$row<=dim(Cy3.scale)[1] & Cy3.projections$col<=dim(Cy3.scale)[2]),3:4]
-    Cy5.signals.filtered=apply(X = Cy5.spots.filtered,MARGIN = 1,FUN = mat.id.grab,data=Cy5.scale)
-    msd=mean((Cy3.projection.signals-Cy5.signals.filtered)^2)
-    return(msd)
+FRET.align <- function(path.to.file='./',file.name=NULL,alignment=NULL,search.radius=6,integration.radius=6,spot.min=NULL,spot.max=Inf){
+  lq.calc <- function(input){
+    input.2=na.omit(c(input))
+    result=(input.2[order(input.2)])[round(0.25*length(input.2))]
+    return(result)
   }
   woh.scale <- function(data){
     a=c(data)
     b=(data-min(a))/diff(range(a))
     return(b)
-  }
-  auto.align <- function(Cy5.spots,Cy3.scale,Cy5.scale,pars){
-    get.msd <- function(par,Cy5.spots,Cy3.scale,Cy5.scale){
-      cart2pol <- function(data,centroid){
-        data.pol=data.frame('r'=sqrt((data$x-centroid[1])^2+(data$y-centroid[2])^2),'theta'=atan2((data$y-centroid[2]),(data$x-centroid[1]))*180/pi)
-        return(data.pol)
-      }
-      pol2cart <- function(data,centroid){
-        data.cart=data.frame('x'=data$r*cos(data$theta*pi/180)+centroid[1],'y'=data$r*sin(data$theta*pi/180)+centroid[2])
-        return(data.cart)
-      }
-      cart2mat <- function(data,row.num){
-        data.mat=data.frame('row'=round(row.num-data$y+1),'col'=round(data$x))
-        return(data.mat)
-      }
-      mat2cart <- function(data,row.num){
-        data.cart=data.frame('x'=data$col,'y'=row.num-data$row+1)
-        return(data.cart)
-      }
-      pol.adjust <- function(data,r.factor,theta.factor){
-        data.adj=data.frame('r'=data$r*r.factor,'theta'=data$theta+theta.factor)
-        return(data.adj)
-      }
-      mat.id.grab <- function(row.col,data){
-        value=data[row.col[1],row.col[2]]
-        return(value)
-      }
-      row.num=dim(Cy3.scale)[1]
-      centroid=rev(dim(Cy3.scale)/2+0.5)
-      r.factor=par[1]
-      theta.factor=par[2]
-      #
-      Cy3.projections=cart2mat(pol2cart(pol.adjust(cart2pol(Cy5.spots[,1:2],centroid),r.factor,theta.factor),centroid),row.num)
-      Cy3.projections.filtered=Cy3.projections[(Cy3.projections$row<=dim(Cy3.scale)[1] & Cy3.projections$col<=dim(Cy3.scale)[2]),]
-      Cy3.projection.signals=apply(X = Cy3.projections.filtered,MARGIN = 1,FUN = mat.id.grab,data=Cy3.scale)
-      Cy5.spots.filtered=Cy5.spots[(Cy3.projections$row<=dim(Cy3.scale)[1] & Cy3.projections$col<=dim(Cy3.scale)[2]),3:4]
-      Cy5.signals.filtered=apply(X = Cy5.spots.filtered,MARGIN = 1,FUN = mat.id.grab,data=Cy5.scale)
-      msd=mean((Cy3.projection.signals-Cy5.signals.filtered)^2)
-      return(msd)
-    }
-    model.fit=optim(par = c(pars[['r']],pars[['theta']]),fn = get.msd,method = "L-BFGS-B",lower = c(0.8,-45),upper = c(1.09,45),Cy5.spots = Cy5.spots,Cy3.scale = Cy3.scale,Cy5.scale = Cy5.scale,control = list('ndeps'=c(0.01,0.1)))
-    fit.parameters=list('r'=model.fit[['par']][1],'theta'=model.fit[['par']][2])
-    return(fit.parameters)
-  }
-  lq.calc <- function(input){
-    input.2=na.omit(c(input))
-    result=(input.2[order(input.2)])[round(0.25*length(input.2))]
-    return(result)
   }
   find.spots <- function(data,box.size,low.lim,high.lim,fill.radius){
     lq.calc <- function(input){
@@ -605,6 +509,22 @@ FRET.align <- function(path.to.file='./',file.name=NULL,alignment=list('r'=0.97,
     final=spots[order(spots$vol),]
     return(final)
   }
+  adj.calc <- function(Cy3.refs,Cy5.refs){
+    Cy5toCy3.trans=Cy3.refs[1,]-Cy5.refs[1,]
+    Cy5toCy3.rot=(atan2(diff(Cy3.refs[,2]),diff(Cy3.refs[,1]))-atan2(diff(Cy5.refs[,2]),diff(Cy5.refs[,1])))*180/pi
+    Cy5toCy3=list('xy'=Cy5toCy3.trans,'theta'=Cy5toCy3.rot,'ref'=Cy5.refs[1,]); Cy3toCy5=list('xy'=-1*Cy5toCy3.trans,'theta'=-1*Cy5toCy3.rot,'ref'=Cy3.refs[1,])
+    Results=list('Cy5toCy3'=Cy5toCy3,'Cy3toCy5'=Cy3toCy5)
+    return(Results)
+  }
+  trans.rot.calc <- function(data,pars){
+    data.1=cbind(data[,1]-pars[['ref']][1],data[,2]-pars[['ref']][2])
+    rot.dx=sqrt(rowSums(data.1^2))*(cos(atan2(data.1[,2],data.1[,1])+pars[['theta']]*pi/180)-cos(atan2(data.1[,2],data.1[,1])))
+    rot.dy=sqrt(rowSums(data.1^2))*(sin(atan2(data.1[,2],data.1[,1])+pars[['theta']]*pi/180)-sin(atan2(data.1[,2],data.1[,1])))
+    new.x=data[,1]+rot.dx+pars[['xy']][1]
+    new.y=data[,2]+rot.dy+pars[['xy']][2]
+    data.new=cbind(new.x,new.y)
+    return(data.new)
+  }
   #
   if (is.null(file.name)==TRUE){
     file.name=list.files(path = path.to.file,pattern = '[.]tif')
@@ -630,90 +550,52 @@ FRET.align <- function(path.to.file='./',file.name=NULL,alignment=list('r'=0.97,
   check.1=readline(prompt = 'Image loading complete. Proceed with alignment? (y/n):  '); if (check.1=='n'){stop('SCRIPT ABORTED BY USER')}
   #
   if (is.null(spot.min)==TRUE){
-    spot.min=5*lq.calc(Cy3.scale)*(2*integration.radius+1)^2
+    spot.min=5*lq.calc(Cy5.scale)*(2*integration.radius+1)^2
   }
   Cy5.spots=find.spots(Cy5.scale,search.radius,spot.min,spot.max,integration.radius)
-  par(fig = c(0.25,0.75,0,1))
-  suppressWarnings(image(t(pracma::flipud(Cy5.ref)),col=gray.colors(cumprod(pixel.size.Cy5)),x = 1:pixel.size.Cy5[2],y=1:pixel.size.Cy5[1],axes=FALSE,xlab='',ylab='',main = 'Cy5 Reference Points'))
-  points(Cy5.spots$x,Cy5.spots$y,col = 'red')
-  show(paste0('Median spot volume = ',median(Cy5.spots$vol)))
-  show(paste0('Number of spots identified = ',length(Cy5.spots$x)))
-  check.2=readline(prompt = 'Is reference spot selection acceptable? (y/n):  '); if (check.2!='n' & check.2!='y'){stop('INVALID RESPONSE')}
-  while (check.2=='n'){
-    search.radius=as.numeric(readline(prompt = 'New search box radius (ENTER for default):  '))
-    if (is.na(search.radius)==T){
-      search.radius=6
-    }
-    integration.radius=as.numeric(readline(prompt = 'New integration box radius (ENTER for default):  '))
-    if (is.na(integration.radius)==T){
-      integration.radius=6
-    }
-    spot.min=as.numeric(readline(prompt = 'New spot minimum volume (ENTER for default):  '))
-    if (is.na(spot.min)==T){
-      spot.min=5*lq.calc(Cy3.scale)*(2*integration.radius+1)^2
-    }
-    spot.max=as.numeric(readline(prompt = 'New spot maximum volume (ENTER for default):  '))
-    if (is.na(spot.max)==T){
-      spot.max=Inf
-    }
-    Cy5.spots=find.spots(Cy5.scale,search.radius,spot.min,spot.max,integration.radius)
-    par(fig = c(0.25,0.75,0,1))
-    suppressWarnings(image(t(pracma::flipud(Cy5.ref)),col=gray.colors(cumprod(pixel.size.Cy5)),x = 1:pixel.size.Cy5[2],y=1:pixel.size.Cy5[1],axes=FALSE,xlab='',ylab='',main = 'Cy5 Reference Points'))
-    points(Cy5.spots$x,Cy5.spots$y,col = 'red')
-    show(paste0('Median spot volume = ',median(Cy5.spots$vol)))
-    show(paste0('Number of spots identified = ',length(Cy5.spots$x)))
-    check.2=readline(prompt = 'Is reference spot selection acceptable? (y/n/quit):  '); if (check.2!='n' & check.2!='y' & check.2!='quit'){stop('INVALID RESPONSE')}; if (check.2=='quit'){stop('SCRIPT ABORTED BY USER')}
+  if (is.null(spot.min)==TRUE){
+    spot.min=5*lq.calc(Cy3.scale)*(2*integration.radius+1)^2
   }
   Cy3.spots.matched=find.spots(Cy3.scale,search.radius,spot.min,spot.max,integration.radius)
-  #
-  if (is.list(alignment)==TRUE){
-    auto.pars=auto.align(Cy5.spots,Cy3.scale,Cy5.scale,alignment)
+  ref.check='n'
+  while(ref.check!='y'){
+    par(fig = c(0.5,1,0,1))
+    suppressWarnings(image(t(pracma::flipud(Cy5.ref)),col=gray.colors(cumprod(pixel.size.Cy5)),x = 1:pixel.size.Cy5[2],y=1:pixel.size.Cy5[1],axes=FALSE,xlab='',ylab='',main = 'Cy5 Reference Points'))
+    points(Cy5.spots$x,Cy5.spots$y,col = 'red')
+    show('Please click on two reference points for image alignment -- Cy5 Image.')
+    ref.temp=as.numeric(identify(Cy5.spots$x,Cy5.spots$y,n=2,plot=F))
+    Cy5.refs=rbind(c(Cy5.spots$x[ref.temp[1]],Cy5.spots$y[ref.temp[1]]),c(Cy5.spots$x[ref.temp[2]],Cy5.spots$y[ref.temp[2]]))
+    points(Cy5.refs[,1],Cy5.refs[,2],col = 'blue')
+    text(Cy5.refs[,1],Cy5.refs[,2],labels=1:2,col = 'blue',cex=1.5,adj=c(0,0))
+    show(paste0(sqrt(sum(diff(Cy5.refs[,1])^2+diff(Cy5.refs[,2])^2))))
+    par(fig = c(0,0.5,0,1),new=TRUE)
+    suppressWarnings(image(t(pracma::flipud(Cy3.ref)),col=gray.colors(cumprod(pixel.size.Cy3)),x = 1:pixel.size.Cy3[2],y=1:pixel.size.Cy3[1],axes=FALSE,xlab='',ylab='',main = 'Cy3 Reference Points'))
+    points(Cy3.spots.matched$x,Cy3.spots.matched$y,col = 'green')
+    show('Please click on the two corresponding reference points in the Cy3 image.')
+    ref.temp=as.numeric(identify(Cy3.spots.matched$x,Cy3.spots.matched$y,n=2,plot=F))
+    Cy3.refs=rbind(c(Cy3.spots.matched$x[ref.temp[1]],Cy3.spots.matched$y[ref.temp[1]]),c(Cy3.spots.matched$x[ref.temp[2]],Cy3.spots.matched$y[ref.temp[2]]))
+    points(Cy3.refs[,1],Cy3.refs[,2],col = 'blue')
+    text(Cy3.refs[,1],Cy3.refs[,2],labels=1:2,col = 'blue',cex=1.5,adj=c(0,0))
+    show(paste0(sqrt(sum(diff(Cy3.refs[,1])^2+diff(Cy3.refs[,2])^2))))
+    ref.check=readline(prompt = 'Are reference point selections acceptable? (y/n/quit):  '); if (ref.check=='quit'){stop('SCRIPT ABORTED BY USER')}
   }
-  if (is.list(alignment)==FALSE){
-    if (alignment=='manual'){
-      auto.pars=list('r'=1,'theta'=0)
-    }
-  }
-  r.adj.value=auto.pars[['r']]
-  theta.adj.value=auto.pars[['theta']]
+  adj.pars=adj.calc(Cy3.refs,Cy5.refs)
   #
   par(fig = c(0,0.5,0,1))
   suppressWarnings(image(t(pracma::flipud(Cy3.ref)),col=gray.colors(cumprod(pixel.size.Cy3)),x = 1:pixel.size.Cy3[2],y=1:pixel.size.Cy3[1],axes=FALSE,xlab='',ylab='',main = 'Cy3'))
   points(Cy5.spots$x,Cy5.spots$y,col = 'red',pch = 'x',cex=0.4)
-  points(pol2cart(pol.adjust(cart2pol(Cy5.spots[,1:2],rev(dim(Cy3.scale)/2+0.5)),r.adj.value,theta.adj.value),rev(dim(Cy3.scale)/2+0.5)),col = 'green')
+  points(trans.rot.calc(cbind(Cy5.spots$x,Cy5.spots$y),adj.pars[['Cy5toCy3']]),col = 'green')
   par(fig = c(0.5,1,0,1),new  = TRUE)
   suppressWarnings(image(t(pracma::flipud(Cy5.ref)),col=gray.colors(cumprod(pixel.size.Cy5)),x = 1:pixel.size.Cy5[2],y=1:pixel.size.Cy5[1],axes=FALSE,xlab='',ylab='',main = 'Cy5'))
-  points(pol2cart(pol.adjust(cart2pol(Cy5.spots[,1:2],rev(dim(Cy3.scale)/2+0.5)),r.adj.value,theta.adj.value),rev(dim(Cy3.scale)/2+0.5)),col = 'green',pch = 'x',cex=0.4)
+  points(trans.rot.calc(cbind(Cy5.spots$x,Cy5.spots$y),adj.pars[['Cy5toCy3']]),col = 'green',pch = 'x',cex=0.4)
   points(Cy5.spots$x,Cy5.spots$y,col = 'red')
-  show(paste0('r = ',signif(r.adj.value,3)))
-  show(paste0('theta = ',signif(theta.adj.value,3)))
-  show(paste0('RMSD = ',signif(sqrt(get.msd(c(r.adj.value,theta.adj.value),Cy5.spots,Cy3.scale,Cy5.scale)),3)))
-  check.3=readline(prompt = 'Is initial alignment acceptable? (y/n):  '); if (check.3!='n' & check.3!='y'){stop('INVALID RESPONSE')}
-  while (check.3=='n'){
-    r.adj.value=as.numeric(readline(prompt = 'New scaling factor (ENTER for default):  '))
-    if (is.na(r.adj.value)==T){
-      r.adj.value=auto.pars[['r']]
-    }
-    theta.adj.value=as.numeric(readline(prompt = 'New rotational adjustment factor (ENTER for default):  '))
-    if (is.na(theta.adj.value)==T){
-      theta.adj.value=auto.pars[['theta']]
-    }
-    par(fig = c(0,0.5,0,1))
-    suppressWarnings(image(t(pracma::flipud(Cy3.ref)),col=gray.colors(cumprod(pixel.size.Cy3)),x = 1:pixel.size.Cy3[2],y=1:pixel.size.Cy3[1],axes=FALSE,xlab='',ylab='',main = 'Cy3'))
-    points(Cy5.spots$x,Cy5.spots$y,col = 'red',pch = 'x',cex=0.4)
-    points(pol2cart(pol.adjust(cart2pol(Cy5.spots[,1:2],rev(dim(Cy3.scale)/2+0.5)),r.adj.value,theta.adj.value),rev(dim(Cy3.scale)/2+0.5)),col = 'green')
-    par(fig = c(0.5,1,0,1),new  = TRUE)
-    suppressWarnings(image(t(pracma::flipud(Cy5.ref)),col=gray.colors(cumprod(pixel.size.Cy5)),x = 1:pixel.size.Cy5[2],y=1:pixel.size.Cy5[1],axes=FALSE,xlab='',ylab='',main = 'Cy5'))
-    points(pol2cart(pol.adjust(cart2pol(Cy5.spots[,1:2],rev(dim(Cy3.scale)/2+0.5)),r.adj.value,theta.adj.value),rev(dim(Cy3.scale)/2+0.5)),col = 'green',pch = 'x',cex=0.4)
-    points(Cy5.spots$x,Cy5.spots$y,col = 'red')
-    show(paste0('r = ',signif(r.adj.value,3)))
-    show(paste0('theta = ',signif(theta.adj.value,3)))
-    show(paste0('RMSD = ',signif(sqrt(get.msd(c(r.adj.value,theta.adj.value),Cy5.spots,Cy3.scale,Cy5.scale)),3)))
-    check.3=readline(prompt = 'Is alignment acceptable? (y/n/quit):  '); if (check.3=='quit'){stop('SCRIPT ABORTED BY USER')}; if (check.3!='n' & check.3!='y' & check.3!='quit'){stop('INVALID RESPONSE')}
+  show(paste0('theta = ',signif(adj.pars[['Cy5toCy3']][['theta']],3)))
+  show(paste0('x = ',signif(adj.pars[['Cy5toCy3']][['xy']][1],3),'; y = ',signif(adj.pars[['Cy5toCy3']][['xy']][2],3)))
+  check.3=readline(prompt = 'Is initial alignment acceptable? (y/n/quit):  '); if (check.3!='n' & check.3!='y'){stop('INVALID RESPONSE')}
+  if (check.3=='y'){
+    show(paste0('Alignment complete -- beginning parameter export!'))
+    save(adj.pars,file = paste0(path.to.file,'Alignment_Parameters.RData'))
   }
-  show(paste0('Alignment complete -- beginning parameter export!'))
-  # 
-  save(r.adj.value,theta.adj.value,file = paste0(path.to.file,'Alignment_Parameters.RData'))
 }
 
 FRET.id <- function(time.step,path.to.file='./',Cy3.file.name=NULL,Cy5.file.name=NULL,align.file.name='Alignment_Parameters.RData',Cy3.search.box=6,Cy5.search.box=6,Cy3.integration.radius=6,Cy5.integration.radius=6,Cy3.spot.min=0,Cy5.spot.min=0,Cy3.spot.max=Inf,Cy5.spot.max=Inf,border.spots=F){
@@ -731,14 +613,6 @@ FRET.id <- function(time.step,path.to.file='./',Cy3.file.name=NULL,Cy5.file.name
     result=sum(input[(row-radius):(row+radius),(col-radius):(col+radius)])-lq.calc(input[(row-radius):(row+radius),(col-radius):(col+radius)])*(2*radius+1)^2
     return(result)
   }
-  cart2pol <- function(data,centroid){
-    data.pol=data.frame('r'=sqrt((data$x-centroid[1])^2+(data$y-centroid[2])^2),'theta'=atan2((data$y-centroid[2]),(data$x-centroid[1]))*180/pi)
-    return(data.pol)
-  }
-  pol2cart <- function(data,centroid){
-    data.cart=data.frame('x'=data$r*cos(data$theta*pi/180)+centroid[1],'y'=data$r*sin(data$theta*pi/180)+centroid[2])
-    return(data.cart)
-  }
   cart2mat <- function(data,row.num){
     data.mat=data.frame('row'=round(row.num-data$y+1),'col'=round(data$x))
     return(data.mat)
@@ -747,59 +621,15 @@ FRET.id <- function(time.step,path.to.file='./',Cy3.file.name=NULL,Cy5.file.name
     data.cart=data.frame('x'=data$col,'y'=row.num-data$row+1)
     return(data.cart)
   }
-  pol.adjust <- function(input,r.factor,theta.factor){
-    data.adj=data.frame('r'=data$r*r.factor,'theta'=data$theta+theta.factor)
-    return(data.adj)
-  }
-  C5toC3 <- function(input,centroid,row.num,r.factor,theta.factor){
-    cart2pol <- function(data,centroid){
-      data.pol=data.frame('r'=sqrt((data$x-centroid[1])^2+(data$y-centroid[2])^2),'theta'=atan2((data$y-centroid[2]),(data$x-centroid[1]))*180/pi)
-      return(data.pol)
-    }
-    pol2cart <- function(data,centroid){
-      data.cart=data.frame('x'=data$r*cos(data$theta*pi/180)+centroid[1],'y'=data$r*sin(data$theta*pi/180)+centroid[2])
-      return(data.cart)
-    }
-    cart2mat <- function(data,row.num){
-      data.mat=data.frame('row'=round(row.num-data$y+1),'col'=round(data$x))
-      return(data.mat)
-    }
-    mat2cart <- function(data,row.num){
-      data.cart=data.frame('x'=data$col,'y'=row.num-data$row+1)
-      return(data.cart)
-    }
-    pol.adjust <- function(data,r.factor,theta.factor){
-      data.adj=data.frame('r'=data$r*r.factor,'theta'=data$theta+theta.factor)
-      return(data.adj)
-    }
+   C5toC3 <- function(input,adj.pars,row.num){
     data=input
-    data[,1:2]=pol2cart(pol.adjust(cart2pol(input[,1:2],centroid),r.factor,theta.factor),centroid)
+    data[,1:2]=trans.rot.calc(data[,1:2],adj.pars[['Cy5toCy3']])
     data[,3:4]=cart2mat(data[,1:2],row.num)
     return(data)
   }
-  C3toC5 <- function(input,centroid,row.num,r.factor,theta.factor){
-    cart2pol <- function(data,centroid){
-      data.pol=data.frame('r'=sqrt((data$x-centroid[1])^2+(data$y-centroid[2])^2),'theta'=atan2((data$y-centroid[2]),(data$x-centroid[1]))*180/pi)
-      return(data.pol)
-    }
-    pol2cart <- function(data,centroid){
-      data.cart=data.frame('x'=data$r*cos(data$theta*pi/180)+centroid[1],'y'=data$r*sin(data$theta*pi/180)+centroid[2])
-      return(data.cart)
-    }
-    cart2mat <- function(data,row.num){
-      data.mat=data.frame('row'=round(row.num-data$y+1),'col'=round(data$x))
-      return(data.mat)
-    }
-    mat2cart <- function(data,row.num){
-      data.cart=data.frame('x'=data$col,'y'=row.num-data$row+1)
-      return(data.cart)
-    }
-    pol.adjust <- function(data,r.factor,theta.factor){
-      data.adj=data.frame('r'=data$r*r.factor,'theta'=data$theta+theta.factor)
-      return(data.adj)
-    }
+  C3toC5 <- function(input,adj.pars,row.num){
     data=input
-    data[,1:2]=pol2cart(pol.adjust(cart2pol(input[,1:2],centroid),1/r.factor,0-theta.factor),centroid)
+    data[,1:2]=trans.rot.calc(data[,1:2],adj.pars[['Cy3toCy5']])
     data[,3:4]=cart2mat(data[,1:2],row.num)
     return(data)
   }
@@ -849,6 +679,15 @@ FRET.id <- function(time.step,path.to.file='./',Cy3.file.name=NULL,Cy5.file.name
     final=spots[order(spots$vol),]
     return(final)
   }
+  trans.rot.calc <- function(data,pars){
+    data.1=cbind(data[,1]-pars[['ref']][1],data[,2]-pars[['ref']][2])
+    rot.dx=sqrt(rowSums(data.1^2))*(cos(atan2(data.1[,2],data.1[,1])+pars[['theta']]*pi/180)-cos(atan2(data.1[,2],data.1[,1])))
+    rot.dy=sqrt(rowSums(data.1^2))*(sin(atan2(data.1[,2],data.1[,1])+pars[['theta']]*pi/180)-sin(atan2(data.1[,2],data.1[,1])))
+    new.x=data[,1]+rot.dx+pars[['xy']][1]
+    new.y=data[,2]+rot.dy+pars[['xy']][2]
+    data.new=cbind(new.x,new.y)
+    return(data.new)
+  }
   #
   if (is.null(Cy3.file.name)==TRUE){
     Cy3.file.name=list.files(path = path.to.file,pattern = '[.]tif')[1]
@@ -869,10 +708,7 @@ FRET.id <- function(time.step,path.to.file='./',Cy3.file.name=NULL,Cy5.file.name
   Cy5.image.avg=apply(Cy5.image.data,MARGIN = c(1,2),FUN = mean)
   #
   load(file = paste0(path.to.file,align.file.name))
-  r.factor=r.adj.value
-  theta.factor=theta.adj.value
   row.num=dim(Cy3.image.avg)[1]
-  centroid=rev(dim(Cy3.image.avg)/2+0.5)
   #
   par(fig = c(0,0.5,0.5,1))
   suppressWarnings(image(t(pracma::flipud(Cy3.image.avg)),col=gray.colors(cumprod(pixel.size)),x = 1:pixel.size[2],y=1:pixel.size[1],axes=FALSE,xlab='',ylab='',main = 'Cy3'))
@@ -883,18 +719,18 @@ FRET.id <- function(time.step,path.to.file='./',Cy3.file.name=NULL,Cy5.file.name
   Cy3.spots=find.spots(data = Cy3.image.avg,box.size = Cy3.search.box,fill.radius = Cy3.integration.radius,low.lim = Cy3.spot.min,high.lim = Cy3.spot.max)
   Cy5.spots=find.spots(data = Cy5.image.avg,box.size = Cy5.search.box,fill.radius = Cy5.integration.radius,low.lim = Cy5.spot.min,high.lim = Cy5.spot.max)
   Cy5spots.Cy5axes=Cy5.spots
-  Cy5spots.Cy3axes=C5toC3(input = Cy5.spots,centroid = centroid,row.num = row.num,r.factor = r.factor,theta.factor = theta.factor)
+  Cy5spots.Cy3axes=C5toC3(input = Cy5.spots,row.num = row.num,adj.pars = adj.pars)
   Cy3spots.Cy3axes=Cy3.spots
-  Cy3spots.Cy5axes=C3toC5(input = Cy3.spots,centroid = centroid,row.num = row.num,r.factor = r.factor,theta.factor = theta.factor)
+  Cy3spots.Cy5axes=C3toC5(input = Cy3.spots,row.num = row.num,adj.pars = adj.pars)
   if(border.spots==F){
     Cy3.borderEX=((Cy3spots.Cy3axes$x>(Cy3.integration.radius+1)) & (Cy3spots.Cy5axes$x>(Cy5.integration.radius+1)) & ((pixel.size[1]-Cy3spots.Cy3axes$x)>(Cy3.integration.radius+1)) & ((pixel.size[1]-Cy3spots.Cy5axes$x)>(Cy5.integration.radius+1)) & (Cy3spots.Cy3axes$y>(Cy3.integration.radius+1)) & (Cy3spots.Cy5axes$y>(Cy5.integration.radius+1)) & ((pixel.size[2]-Cy3spots.Cy3axes$y)>(Cy3.integration.radius+1)) & ((pixel.size[2]-Cy3spots.Cy5axes$y)>(Cy5.integration.radius+1)))
     Cy5.borderEX=((Cy5spots.Cy3axes$x>(Cy3.integration.radius+1)) & (Cy5spots.Cy5axes$x>(Cy5.integration.radius+1)) & ((pixel.size[1]-Cy5spots.Cy3axes$x)>(Cy3.integration.radius+1)) & ((pixel.size[1]-Cy5spots.Cy5axes$x)>(Cy5.integration.radius+1)) & (Cy5spots.Cy3axes$y>(Cy3.integration.radius+1)) & (Cy5spots.Cy5axes$y>(Cy5.integration.radius+1)) & ((pixel.size[2]-Cy5spots.Cy3axes$y)>(Cy3.integration.radius+1)) & ((pixel.size[2]-Cy5spots.Cy5axes$y)>(Cy5.integration.radius+1)))
     Cy3.spots=Cy3.spots[Cy3.borderEX,]
     Cy5.spots=Cy5.spots[Cy5.borderEX,]
     Cy5spots.Cy5axes=Cy5.spots
-    Cy5spots.Cy3axes=C5toC3(input = Cy5.spots,centroid = centroid,row.num = row.num,r.factor = r.factor,theta.factor = theta.factor)
+    Cy5spots.Cy3axes=C5toC3(input = Cy5.spots,row.num = row.num,adj.pars = adj.pars)
     Cy3spots.Cy3axes=Cy3.spots
-    Cy3spots.Cy5axes=C3toC5(input = Cy3.spots,centroid = centroid,row.num = row.num,r.factor = r.factor,theta.factor = theta.factor)
+    Cy3spots.Cy5axes=C3toC5(input = Cy3.spots,row.num = row.num,adj.pars = adj.pars)
   }
   if ((sum(c(Cy3spots.Cy3axes$x,Cy3spots.Cy5axes$x,Cy5spots.Cy3axes$x,Cy5spots.Cy5axes$x)<=(max(c(Cy3.integration.radius,Cy5.integration.radius))+1))>0) | (sum((pixel.size[1]-c(Cy3spots.Cy3axes$x,Cy3spots.Cy5axes$x,Cy5spots.Cy3axes$x,Cy5spots.Cy5axes$x))<=(max(c(Cy3.integration.radius,Cy5.integration.radius))+1))>0) | (sum(c(Cy3spots.Cy3axes$y,Cy3spots.Cy5axes$y,Cy5spots.Cy3axes$y,Cy5spots.Cy5axes$y)<=(max(c(Cy3.integration.radius,Cy5.integration.radius))+1))>0) | (sum((pixel.size[2]-c(Cy3spots.Cy3axes$y,Cy3spots.Cy5axes$y,Cy5spots.Cy3axes$y,Cy5spots.Cy5axes$y))<=(max(c(Cy3.integration.radius,Cy5.integration.radius))+1))>0)){
     warning('ALERT:  Some spots may be too close to image border(s) -- consider re-selection!',immediate. = T)
@@ -951,18 +787,18 @@ FRET.id <- function(time.step,path.to.file='./',Cy3.file.name=NULL,Cy5.file.name
     Cy3.spots=find.spots(data = Cy3.image.avg,box.size = Cy3.search.box,fill.radius = Cy3.integration.radius,low.lim = Cy3.spot.min,high.lim = Cy3.spot.max)
     Cy5.spots=find.spots(data = Cy5.image.avg,box.size = Cy5.search.box,fill.radius = Cy5.integration.radius,low.lim = Cy5.spot.min,high.lim = Cy5.spot.max)
     Cy5spots.Cy5axes=Cy5.spots
-    Cy5spots.Cy3axes=C5toC3(input = Cy5.spots,centroid = centroid,row.num = row.num,r.factor = r.factor,theta.factor = theta.factor)
+    Cy5spots.Cy3axes=C5toC3(input = Cy5.spots,row.num = row.num,adj.pars = adj.pars)
     Cy3spots.Cy3axes=Cy3.spots
-    Cy3spots.Cy5axes=C3toC5(input = Cy3.spots,centroid = centroid,row.num = row.num,r.factor = r.factor,theta.factor = theta.factor)
+    Cy3spots.Cy5axes=C3toC5(input = Cy3.spots,row.num = row.num,adj.pars = adj.pars)
     if(border.spots==F){
       Cy3.borderEX=((Cy3spots.Cy3axes$x>(Cy3.integration.radius+1)) & (Cy3spots.Cy5axes$x>(Cy5.integration.radius+1)) & ((pixel.size[1]-Cy3spots.Cy3axes$x)>(Cy3.integration.radius+1)) & ((pixel.size[1]-Cy3spots.Cy5axes$x)>(Cy5.integration.radius+1)) & (Cy3spots.Cy3axes$y>(Cy3.integration.radius+1)) & (Cy3spots.Cy5axes$y>(Cy5.integration.radius+1)) & ((pixel.size[2]-Cy3spots.Cy3axes$y)>(Cy3.integration.radius+1)) & ((pixel.size[2]-Cy3spots.Cy5axes$y)>(Cy5.integration.radius+1)))
       Cy5.borderEX=((Cy5spots.Cy3axes$x>(Cy3.integration.radius+1)) & (Cy5spots.Cy5axes$x>(Cy5.integration.radius+1)) & ((pixel.size[1]-Cy5spots.Cy3axes$x)>(Cy3.integration.radius+1)) & ((pixel.size[1]-Cy5spots.Cy5axes$x)>(Cy5.integration.radius+1)) & (Cy5spots.Cy3axes$y>(Cy3.integration.radius+1)) & (Cy5spots.Cy5axes$y>(Cy5.integration.radius+1)) & ((pixel.size[2]-Cy5spots.Cy3axes$y)>(Cy3.integration.radius+1)) & ((pixel.size[2]-Cy5spots.Cy5axes$y)>(Cy5.integration.radius+1)))
       Cy3.spots=Cy3.spots[Cy3.borderEX,]
       Cy5.spots=Cy5.spots[Cy5.borderEX,]
       Cy5spots.Cy5axes=Cy5.spots
-      Cy5spots.Cy3axes=C5toC3(input = Cy5.spots,centroid = centroid,row.num = row.num,r.factor = r.factor,theta.factor = theta.factor)
+      Cy5spots.Cy3axes=C5toC3(input = Cy5.spots,row.num = row.num,adj.pars = adj.pars)
       Cy3spots.Cy3axes=Cy3.spots
-      Cy3spots.Cy5axes=C3toC5(input = Cy3.spots,centroid = centroid,row.num = row.num,r.factor = r.factor,theta.factor = theta.factor)
+      Cy3spots.Cy5axes=C3toC5(input = Cy3.spots,row.num = row.num,adj.pars = adj.pars)
     }
     if ((sum(c(Cy3spots.Cy3axes$x,Cy3spots.Cy5axes$x,Cy5spots.Cy3axes$x,Cy5spots.Cy5axes$x)<=(max(c(Cy3.integration.radius,Cy5.integration.radius))+1))>0) | (sum((pixel.size[1]-c(Cy3spots.Cy3axes$x,Cy3spots.Cy5axes$x,Cy5spots.Cy3axes$x,Cy5spots.Cy5axes$x))<=(max(c(Cy3.integration.radius,Cy5.integration.radius))+1))>0) | (sum(c(Cy3spots.Cy3axes$y,Cy3spots.Cy5axes$y,Cy5spots.Cy3axes$y,Cy5spots.Cy5axes$y)<=(max(c(Cy3.integration.radius,Cy5.integration.radius))+1))>0) | (sum((pixel.size[2]-c(Cy3spots.Cy3axes$y,Cy3spots.Cy5axes$y,Cy5spots.Cy3axes$y,Cy5spots.Cy5axes$y))<=(max(c(Cy3.integration.radius,Cy5.integration.radius))+1))>0)){
       warning('ALERT:  Some spots may be too close to image border(s) -- consider re-selection!',immediate. = T)
@@ -1367,6 +1203,54 @@ FRET.refine <- function(path.to.file='./',file.name='Initial-Particle_Data.RData
   utils::write.table(refined.Cy3.dwell.calls,file = paste0(path.to.file,'selected_Cy3-dwell-calls.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
   utils::write.table(refined.Cy5.dwell.calls,file = paste0(path.to.file,'selected_Cy5-dwell-calls.txt'),quote = FALSE,sep = '\t',col.names = TRUE,row.names = FALSE)
   return(list('residence.data'=residence.data,'Cy3.image.avg'=Cy3.image.avg,'refined.Cy3.traces'=refined.Cy3.traces,'refined.Cy3.trace.rolls'=refined.Cy3.trace.rolls,'REFspots.Cy3axes'=REFspots.Cy3axes,'refined.Cy3.snaps'=refined.Cy3.snaps,'Cy3.state.calls'=Cy3.state.calls,'Cy3.residence.calls'=Cy3.residence.calls,'Cy3.dwell.calls'=Cy3.dwell.calls,'Cy5.image.avg'=Cy5.image.avg,'refined.Cy5.traces'=refined.Cy5.traces,'refined.Cy5.trace.rolls'=refined.Cy5.trace.rolls,'REFspots.Cy5axes'=REFspots.Cy5axes,'refined.Cy5.snaps'=refined.Cy5.snaps,'Cy5.state.calls'=Cy5.state.calls,'Cy5.residence.calls'=Cy5.residence.calls,'Cy5.dwell.calls'=Cy5.dwell.calls))
+}
+
+bleach.calc <- function(path.to.file='./',file.names=NULL,exc.powers=NULL){
+  data.gen <- function (data){
+    a=(data-min(data))/diff(range(data))
+    b=a[which.max(a):length(a)]
+    return(b)
+  }
+  #
+  if (is.null(file.names)==T & is.null(exc.powers)==T){
+    file.names=list.files(path = path.to.file,pattern = '_mW[.]RData')
+    exc.powers=as.numeric(gsub('_mW.RData','',file.names))
+  }
+  bleach.data=list()
+  bleach.rates=rep(NA,times=length(file.names))
+  max.times=rep(NA,times=length(file.names))
+  for (i in 1:length(file.names)){
+    load(file = paste0(path.to.file,file.names[i]))
+    temp.data=data.gen(rowMeans(particle.traces))
+    mod.data=list('y'=temp.data,'x'=(1:length(temp.data))*time.step)
+    try(temp.mod<-nls(y ~ (1-Mn)*exp(-k*x)+Mn,data = mod.data,start = list('k'=log(2)/(which.min(abs(temp.data-0.5))*time.step),'Mn'=min(temp.data))))
+    if(exists('temp.mod')==T){
+      bleach.data[[i]]=list('data'=mod.data,'power_mW'=exc.powers[i],'k.bleach'=coefficients(temp.mod)[1],'Mn.bleach'=coefficients(temp.mod)[2])
+      bleach.rates[i]=coefficients(temp.mod)[1]
+    } else {
+      bleach.data[[i]]=list('data'=mod.data,'power_mW'=exc.powers[i],'k.bleach'=NA,'Mn.bleach'=NA)
+    }
+    max.times[i]=length(temp.data)*time.step
+    rm(temp.data,mod.data,temp.mod)
+    if(i==length(file.names)){
+      bleach.data[['rates']]=bleach.rates
+      bleach.data[['t.max']]=max(max.times)
+      rm(bleach.rates,max.times)
+    }
+  }
+  par(mfrow=c(2,2),mar=c(5,5,4,1))
+  plot(NULL,NULL,xlim=c(0,bleach.data[['t.max']]),ylim=c(0,1),main='Photobleaching Curves',ylab='Relative Signal',xlab='Time (s)')
+  for (i in 1:(length(bleach.data)-2)){
+    lines(bleach.data[[i]][['data']][['x']],(bleach.data[[i]][['data']][['y']]-bleach.data[[i]][['Mn.bleach']])/(1-bleach.data[[i]][['Mn.bleach']]),lty='dotted',col=i)
+    if(is.na(bleach.data[[i]][['k.bleach']])==F){
+      lines(seq(0,bleach.data[['t.max']],bleach.data[['t.max']]/1e4),exp(-1*bleach.data[[i]][['k.bleach']]*seq(0,bleach.data[['t.max']],bleach.data[['t.max']]/1e4)),col=i,lwd=2)
+    }
+  }
+  legend('topright',legend = paste0(exc.powers,' mW ',expression(cm^-2)),col = 1:(length(bleach.data)-2),fill = 1:(length(bleach.data)-2))
+  plot(exc.powers,bleach.data[['rates']],main='Power-Dependence of Fluorophore Stability',ylab=expression(k[bleach]*' (s'^-1*')'),xlab=expression('Power (mW cm'^-2*')'))
+  lm.fit=lm(y~x,data = list('x'=exc.powers,'y'=bleach.data[['rates']]))
+  lines(seq(min(exc.powers),max(exc.powers),diff(range(exc.powers))/1e3),predict.lm(lm.fit,newdata = list('x'=seq(min(exc.powers),max(exc.powers),diff(range(exc.powers))/1e3))),lwd=3)
+  show(summary(lm.fit))
 }
 
 
